@@ -41,7 +41,7 @@ func Convert(src, dest any) error {
 	l := newMiddleValueList()
 	defer middleValueListPool.Put(l)
 	reflectValue(l, &l.arr[0], srcValue)
-	fromMiddleValue(l, l.arr[0], destValue)
+	fromMiddleValue(l, &l.arr[0], destValue)
 	return nil
 }
 
@@ -147,16 +147,19 @@ func init() {
 
 func typeEncoder(t reflect.Type) encoderFunc {
 
-	if f := fastEncoders[t.Kind()]; f != nil {
-		return f
-	}
-
-	if t == typeSliceInterface {
-		return sliceInterfaceEncoder
-	}
-
-	if t == typeMapStringInterface {
-		return mapStringInterfaceEncoder
+	switch k := t.Kind(); k {
+	case reflect.Slice:
+		if t == typeSliceInterface {
+			return sliceInterfaceEncoder
+		}
+	case reflect.Map:
+		if t == typeMapStringInterface {
+			return mapStringInterfaceEncoder
+		}
+	default:
+		if f := fastEncoders[k]; f != nil {
+			return f
+		}
 	}
 
 	if fi, ok := encoderCache.Load(t); ok {
@@ -420,7 +423,7 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	}
 }
 
-func fromMiddleValue(l *Buffer, p Value, v reflect.Value) {
+func fromMiddleValue(l *Buffer, p *Value, v reflect.Value) {
 	switch p.Type {
 	case Nil:
 		return
@@ -485,7 +488,7 @@ func objectInterface(l *Buffer, v []Value) map[string]interface{} {
 	return r
 }
 
-func fromSimple(p Value, v reflect.Value) {
+func fromSimple(p *Value, v reflect.Value) {
 	v = makeValue(v)
 	switch v.Kind() {
 	case reflect.Interface:
@@ -586,7 +589,7 @@ func fromSimple(p Value, v reflect.Value) {
 	}
 }
 
-func fromSlice(l *Buffer, p Value, v reflect.Value) {
+func fromSlice(l *Buffer, p *Value, v reflect.Value) {
 	var arr []Value
 	if p.Length > 0 {
 		arr = l.arr[p.First : p.First+p.Length]
@@ -604,7 +607,7 @@ func fromSlice(l *Buffer, p Value, v reflect.Value) {
 		i := 0
 		for ; i < n; i++ {
 			if i < v.Len() {
-				fromMiddleValue(l, l.arr[p.First+i], v.Index(i))
+				fromMiddleValue(l, &l.arr[p.First+i], v.Index(i))
 			}
 		}
 		if i < v.Len() {
@@ -620,7 +623,7 @@ func fromSlice(l *Buffer, p Value, v reflect.Value) {
 	}
 }
 
-func fromMap(l *Buffer, p Value, v reflect.Value) {
+func fromMap(l *Buffer, p *Value, v reflect.Value) {
 	v = makeValue(v)
 	t := v.Type()
 	switch v.Kind() {
@@ -644,20 +647,20 @@ func fromMap(l *Buffer, p Value, v reflect.Value) {
 	}
 }
 
-func fromMapToMap(l *Buffer, p Value, v reflect.Value, t reflect.Type) {
+func fromMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	elemType := t.Elem()
 	for i := 0; i < p.Length; i++ {
 		elemValue := reflect.New(elemType).Elem()
-		fromMiddleValue(l, l.arr[p.First+i], elemValue)
+		fromMiddleValue(l, &l.arr[p.First+i], elemValue)
 		keyValue := reflect.ValueOf(p.Name)
 		v.SetMapIndex(keyValue, elemValue)
 	}
 }
 
-func fromMapToStruct(l *Buffer, p Value, v reflect.Value, t reflect.Type) {
+func fromMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	fields := cachedTypeFields(t)
 	for i := 0; i < p.Length; i++ {
-		e := l.arr[p.First+i]
+		e := &l.arr[p.First+i]
 		f, ok := fields.byExactName[e.Name]
 		if !ok {
 			continue
