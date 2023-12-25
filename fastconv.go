@@ -18,7 +18,6 @@ package fastconv
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"reflect"
 	"sort"
@@ -38,10 +37,11 @@ func Convert(src, dest any) error {
 	if destValue.Kind() != reflect.Ptr || destValue.IsNil() {
 		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(destValue)}
 	}
-	l := newMiddleValueList()
-	defer middleValueListPool.Put(l)
-	reflectValue(l, &l.arr[0], srcValue)
-	fromMiddleValue(l, &l.arr[0], destValue)
+	l := newBuffer()
+	defer bufferPool.Put(l)
+	l.Append(1)
+	encodeValue(l, &l.buf[0], srcValue)
+	decodeValue(l, &l.buf[0], destValue)
 	return nil
 }
 
@@ -67,36 +67,48 @@ type Value struct {
 }
 
 type Buffer struct {
-	arr []Value
+	buf []Value
 }
 
 func (b *Buffer) Reset() {
-	b.arr[0] = Value{} // root
-	b.arr = b.arr[:1]
+	b.buf = b.buf[:0]
 }
 
-var middleValueListPool sync.Pool
+func (b *Buffer) Append(n int) {
+	b.grow(n)
+	for i := 0; i < n; i++ {
+		b.buf = append(b.buf, Value{})
+	}
+}
 
-func newMiddleValueList() *Buffer {
-	if v := middleValueListPool.Get(); v != nil {
+func (b *Buffer) grow(n int) {
+	c := cap(b.buf)
+	l := len(b.buf)
+	m := l + n
+	if m > c {
+		buf := make([]Value, l, ((m*3/2)/64)*64)
+		copy(buf, b.buf[:l])
+		b.buf = buf
+	}
+}
+
+var bufferPool sync.Pool
+
+func newBuffer() *Buffer {
+	if v := bufferPool.Get(); v != nil {
 		e := v.(*Buffer)
 		e.Reset()
 		return e
 	}
 	return &Buffer{
-		arr: make([]Value, 1, 512),
+		buf: make([]Value, 0, 512),
 	}
 }
 
-func reflectValue(l *Buffer, p *Value, v reflect.Value) {
-	valueEncoder(v)(l, p, v)
-}
-
-func valueEncoder(v reflect.Value) encoderFunc {
-	if !v.IsValid() {
-		return func(l *Buffer, p *Value, v reflect.Value) {}
+func encodeValue(l *Buffer, p *Value, v reflect.Value) {
+	if v.IsValid() {
+		typeEncoder(v.Type())(l, p, v)
 	}
-	return typeEncoder(v.Type())
 }
 
 // TypeFor returns the [Type] that represents the type argument T.
@@ -115,33 +127,33 @@ var fastEncoders []encoderFunc
 
 func init() {
 	fastEncoders = []encoderFunc{
-		nil,                //Invalid
-		simpleValueEncoder, //Bool
-		simpleValueEncoder, //Int
-		simpleValueEncoder, //Int8
-		simpleValueEncoder, //Int16
-		simpleValueEncoder, //Int32
-		simpleValueEncoder, //Int64
-		simpleValueEncoder, //Uint
-		simpleValueEncoder, //Uint8
-		simpleValueEncoder, //Uint16
-		simpleValueEncoder, //Uint32
-		simpleValueEncoder, //Uint64
-		nil,                //Uintptr
-		simpleValueEncoder, //Float32
-		simpleValueEncoder, //Float64
-		nil,                //Complex64
-		nil,                //Complex128
-		nil,                //Array
-		nil,                //Chan
-		nil,                //Func
-		interfaceEncoder,   //Interface
-		nil,                //Map
-		nil,                //Pointer
-		nil,                //Slice
-		simpleValueEncoder, //String
-		nil,                //Struct
-		nil,                //UnsafePointer
+		nil,              //Invalid
+		valueEncoder,     //Bool
+		valueEncoder,     //Int
+		valueEncoder,     //Int8
+		valueEncoder,     //Int16
+		valueEncoder,     //Int32
+		valueEncoder,     //Int64
+		valueEncoder,     //Uint
+		valueEncoder,     //Uint8
+		valueEncoder,     //Uint16
+		valueEncoder,     //Uint32
+		valueEncoder,     //Uint64
+		nil,              //Uintptr
+		valueEncoder,     //Float32
+		valueEncoder,     //Float64
+		nil,              //Complex64
+		nil,              //Complex128
+		nil,              //Array
+		nil,              //Chan
+		nil,              //Func
+		interfaceEncoder, //Interface
+		nil,              //Map
+		nil,              //Pointer
+		nil,              //Slice
+		valueEncoder,     //String
+		nil,              //Struct
+		nil,              //UnsafePointer
 	}
 }
 
@@ -190,6 +202,21 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	return f
 }
 
+func newTypeEncoder(t reflect.Type) encoderFunc {
+	switch t.Kind() {
+	case reflect.Pointer:
+		return newPtrEncoder(t)
+	case reflect.Array, reflect.Slice:
+		return newArrayEncoder(t)
+	case reflect.Map:
+		return newMapEncoder(t)
+	case reflect.Struct:
+		return newStructEncoder(t)
+	default:
+		return func(l *Buffer, p *Value, v reflect.Value) {}
+	}
+}
+
 func sliceInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 	s := v.Interface().([]interface{})
 	n := len(s)
@@ -198,19 +225,14 @@ func sliceInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(l.arr)
+	end := len(l.buf)
 	p.First = end
-	for i := 0; i < n; i++ {
-		if len(l.arr) == cap(l.arr) {
-			fmt.Println("grow")
-		}
-		l.arr = append(l.arr, Value{})
-	}
+	l.Append(n)
 	for i, sValue := range s {
 		if sValue == nil {
-			l.arr[end+i] = Value{Type: Nil}
+			l.buf[end+i] = Value{Type: Nil}
 		} else {
-			reflectValue(l, &l.arr[end+i], reflect.ValueOf(sValue))
+			encodeValue(l, &l.buf[end+i], reflect.ValueOf(sValue))
 		}
 	}
 }
@@ -223,22 +245,17 @@ func mapStringInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(l.arr)
+	end := len(l.buf)
 	p.First = end
-	for i := 0; i < n; i++ {
-		if len(l.arr) == cap(l.arr) {
-			fmt.Println("grow")
-		}
-		l.arr = append(l.arr, Value{})
-	}
+	l.Append(n)
 	i := 0
 	for mKey, mValue := range m {
 		if mValue == nil {
-			l.arr[end+i] = Value{Type: Nil}
+			l.buf[end+i] = Value{Type: Nil}
 		} else {
-			reflectValue(l, &l.arr[end+i], reflect.ValueOf(mValue))
+			encodeValue(l, &l.buf[end+i], reflect.ValueOf(mValue))
 		}
-		l.arr[end+i].Name = mKey
+		l.buf[end+i].Name = mKey
 		i++
 	}
 }
@@ -255,10 +272,10 @@ func interfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 		p.Type = Nil
 		return
 	}
-	reflectValue(l, p, v.Elem())
+	encodeValue(l, p, v.Elem())
 }
 
-func simpleValueEncoder(l *Buffer, p *Value, v reflect.Value) {
+func valueEncoder(l *Buffer, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Bool:
 		p.Type = Bool
@@ -283,16 +300,16 @@ type ptrEncoder struct {
 }
 
 func newPtrEncoder(t reflect.Type) encoderFunc {
-	enc := ptrEncoder{typeEncoder(t.Elem())}
-	return enc.encode
+	e := ptrEncoder{typeEncoder(t.Elem())}
+	return e.encode
 }
 
-func (pe ptrEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
+func (e ptrEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	if v.IsNil() {
 		p.Type = Nil
 		return
 	}
-	pe.elemEnc(l, p, v.Elem())
+	e.elemEnc(l, p, v.Elem())
 }
 
 type arrayEncoder struct {
@@ -300,27 +317,22 @@ type arrayEncoder struct {
 }
 
 func newArrayEncoder(t reflect.Type) encoderFunc {
-	enc := arrayEncoder{typeEncoder(t.Elem())}
-	return enc.encode
+	e := arrayEncoder{typeEncoder(t.Elem())}
+	return e.encode
 }
 
-func (ae arrayEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
+func (e arrayEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	n := v.Len()
 	p.Type = Slice
 	if n == 0 {
 		return
 	}
 	p.Length = n
-	end := len(l.arr)
+	end := len(l.buf)
 	p.First = end
+	l.Append(n)
 	for i := 0; i < n; i++ {
-		if len(l.arr) == cap(l.arr) {
-			fmt.Println("grow")
-		}
-		l.arr = append(l.arr, Value{})
-	}
-	for i := 0; i < n; i++ {
-		ae.elemEnc(l, &l.arr[end+i], v.Index(i))
+		e.elemEnc(l, &l.buf[end+i], v.Index(i))
 	}
 }
 
@@ -329,25 +341,20 @@ type mapEncoder struct {
 }
 
 func newMapEncoder(t reflect.Type) encoderFunc {
-	me := mapEncoder{typeEncoder(t.Elem())}
-	return me.encode
+	e := mapEncoder{typeEncoder(t.Elem())}
+	return e.encode
 }
 
-func (me mapEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
+func (e mapEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	n := v.Len()
 	p.Type = Map
 	if n == 0 {
 		return
 	}
 	p.Length = n
-	end := len(l.arr)
+	end := len(l.buf)
 	p.First = end
-	for i := 0; i < n; i++ {
-		if len(l.arr) == cap(l.arr) {
-			fmt.Println("grow")
-		}
-		l.arr = append(l.arr, Value{})
-	}
+	l.Append(n)
 	i := 0
 	iter := v.MapRange()
 	for iter.Next() {
@@ -355,8 +362,8 @@ func (me mapEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 		if !valid {
 			continue
 		}
-		me.elemEnc(l, &l.arr[end+i], iter.Value())
-		l.arr[end+i].Name = strKey
+		e.elemEnc(l, &l.buf[end+i], iter.Value())
+		l.buf[end+i].Name = strKey
 		i++
 	}
 }
@@ -366,27 +373,22 @@ type structEncoder struct {
 }
 
 func newStructEncoder(t reflect.Type) encoderFunc {
-	se := structEncoder{fields: cachedTypeFields(t)}
-	return se.encode
+	e := structEncoder{fields: cachedTypeFields(t)}
+	return e.encode
 }
 
-func (se structEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
-	n := len(se.fields.list)
+func (e structEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
+	n := len(e.fields.list)
 	p.Type = Map
 	if n == 0 {
 		return
 	}
 	p.Length = n
-	end := len(l.arr)
+	end := len(l.buf)
 	p.First = end
-	for i := 0; i < n; i++ {
-		if len(l.arr) == cap(l.arr) {
-			fmt.Println("grow")
-		}
-		l.arr = append(l.arr, Value{})
-	}
-	for j := range se.fields.list {
-		f := &se.fields.list[j]
+	l.Append(n)
+	for j := range e.fields.list {
+		f := &e.fields.list[j]
 		fv := v
 		breakNil := false
 		for _, i := range f.index {
@@ -400,30 +402,15 @@ func (se structEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 			fv = fv.Field(i)
 		}
 		if breakNil {
-			l.arr[end+j] = Value{Type: Nil, Name: f.name}
+			l.buf[end+j] = Value{Type: Nil, Name: f.name}
 			continue
 		}
-		f.encoder(l, &l.arr[end+j], fv)
-		l.arr[end+j].Name = f.name
+		f.encoder(l, &l.buf[end+j], fv)
+		l.buf[end+j].Name = f.name
 	}
 }
 
-func newTypeEncoder(t reflect.Type) encoderFunc {
-	switch t.Kind() {
-	case reflect.Pointer:
-		return newPtrEncoder(t)
-	case reflect.Array, reflect.Slice:
-		return newArrayEncoder(t)
-	case reflect.Map:
-		return newMapEncoder(t)
-	case reflect.Struct:
-		return newStructEncoder(t)
-	default:
-		return func(l *Buffer, p *Value, v reflect.Value) {}
-	}
-}
-
-func fromMiddleValue(l *Buffer, p *Value, v reflect.Value) {
+func decodeValue(l *Buffer, p *Value, v reflect.Value) {
 	switch p.Type {
 	case Nil:
 		return
@@ -461,10 +448,10 @@ func valueInterface(l *Buffer, p Value) interface{} {
 	case String:
 		return *(*string)(unsafe.Pointer(&p.Value))
 	case Slice:
-		arr := l.arr[p.First : p.First+p.Length]
+		arr := l.buf[p.First : p.First+p.Length]
 		return arrayInterface(l, arr)
 	case Map:
-		arr := l.arr[p.First : p.First+p.Length]
+		arr := l.buf[p.First : p.First+p.Length]
 		return objectInterface(l, arr)
 	default:
 		log.Println("should never reach here")
@@ -592,7 +579,7 @@ func fromSimple(p *Value, v reflect.Value) {
 func fromSlice(l *Buffer, p *Value, v reflect.Value) {
 	var arr []Value
 	if p.Length > 0 {
-		arr = l.arr[p.First : p.First+p.Length]
+		arr = l.buf[p.First : p.First+p.Length]
 	}
 	v = makeValue(v)
 	switch v.Kind() {
@@ -607,7 +594,7 @@ func fromSlice(l *Buffer, p *Value, v reflect.Value) {
 		i := 0
 		for ; i < n; i++ {
 			if i < v.Len() {
-				fromMiddleValue(l, &l.arr[p.First+i], v.Index(i))
+				decodeValue(l, &l.buf[p.First+i], v.Index(i))
 			}
 		}
 		if i < v.Len() {
@@ -630,7 +617,7 @@ func fromMap(l *Buffer, p *Value, v reflect.Value) {
 	case reflect.Interface:
 		var arr []Value
 		if p.Length > 0 {
-			arr = l.arr[p.First : p.First+p.Length]
+			arr = l.buf[p.First : p.First+p.Length]
 		}
 		oi := objectInterface(l, arr)
 		v.Set(reflect.ValueOf(oi))
@@ -651,7 +638,7 @@ func fromMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	elemType := t.Elem()
 	for i := 0; i < p.Length; i++ {
 		elemValue := reflect.New(elemType).Elem()
-		fromMiddleValue(l, &l.arr[p.First+i], elemValue)
+		decodeValue(l, &l.buf[p.First+i], elemValue)
 		keyValue := reflect.ValueOf(p.Name)
 		v.SetMapIndex(keyValue, elemValue)
 	}
@@ -660,7 +647,7 @@ func fromMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 func fromMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	fields := cachedTypeFields(t)
 	for i := 0; i < p.Length; i++ {
-		e := &l.arr[p.First+i]
+		e := &l.buf[p.First+i]
 		f, ok := fields.byExactName[e.Name]
 		if !ok {
 			continue
@@ -679,7 +666,7 @@ func fromMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 			}
 			subValue = subValue.Field(j)
 		}
-		fromMiddleValue(l, e, subValue)
+		decodeValue(l, e, subValue)
 	}
 }
 
