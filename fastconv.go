@@ -48,14 +48,15 @@ func Convert(src, dest any) error {
 type Kind int
 
 const (
-	Nil    = Kind(0)
-	Bool   = Kind(1)
-	Int    = Kind(2)
-	Uint   = Kind(3)
-	Float  = Kind(4)
-	String = Kind(5)
-	Slice  = Kind(6)
-	Map    = Kind(7)
+	Nil = Kind(iota)
+	Bool
+	Int
+	Uint
+	Float
+	String
+	Bytes
+	Slice
+	Map
 )
 
 type Value struct {
@@ -64,6 +65,54 @@ type Value struct {
 	Value  [8]byte
 	Length int // 孩子数量
 	First  int // 首个孩子
+}
+
+func (p *Value) Bool() bool {
+	return *(*bool)(unsafe.Pointer(&p.Value))
+}
+
+func (p *Value) SetBool(b bool) {
+	*(*bool)(unsafe.Pointer(&p.Value)) = b
+}
+
+func (p *Value) Int() int64 {
+	return *(*int64)(unsafe.Pointer(&p.Value))
+}
+
+func (p *Value) SetInt(i int64) {
+	*(*int64)(unsafe.Pointer(&p.Value)) = i
+}
+
+func (p *Value) Uint() uint64 {
+	return *(*uint64)(unsafe.Pointer(&p.Value))
+}
+
+func (p *Value) SetUint(u uint64) {
+	*(*uint64)(unsafe.Pointer(&p.Value)) = u
+}
+
+func (p *Value) Float() float64 {
+	return *(*float64)(unsafe.Pointer(&p.Value))
+}
+
+func (p *Value) SetFloat(f float64) {
+	*(*float64)(unsafe.Pointer(&p.Value)) = f
+}
+
+func (p *Value) String() string {
+	return *(*string)(unsafe.Pointer(&p.Value))
+}
+
+func (p *Value) SetString(s string) {
+	*(*string)(unsafe.Pointer(&p.Value)) = s
+}
+
+func (p *Value) Bytes() []byte {
+	return *(*[]byte)(unsafe.Pointer(&p.Value))
+}
+
+func (p *Value) SetBytes(s []byte) {
+	*(*[]byte)(unsafe.Pointer(&p.Value)) = s
 }
 
 type Buffer struct {
@@ -116,6 +165,7 @@ func TypeFor[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
 
+var typeSliceByte = TypeFor[[]interface{}]()
 var typeSliceInterface = TypeFor[[]interface{}]()
 var typeMapStringInterface = TypeFor[map[string]interface{}]()
 
@@ -163,6 +213,8 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Slice:
 		if t == typeSliceInterface {
 			return sliceInterfaceEncoder
+		} else if t == typeSliceByte {
+			return sliceByteEncoder
 		}
 	case reflect.Map:
 		if t == typeMapStringInterface {
@@ -215,6 +267,11 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	default:
 		return func(l *Buffer, p *Value, v reflect.Value) {}
 	}
+}
+
+func sliceByteEncoder(l *Buffer, p *Value, v reflect.Value) {
+	p.Type = Bytes
+	p.SetBytes(v.Interface().([]byte))
 }
 
 func sliceInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
@@ -279,19 +336,19 @@ func valueEncoder(l *Buffer, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Bool:
 		p.Type = Bool
-		*(*bool)(unsafe.Pointer(&p.Value)) = v.Bool()
+		p.SetBool(v.Bool())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		p.Type = Int
-		*(*int64)(unsafe.Pointer(&p.Value)) = v.Int()
+		p.SetInt(v.Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		p.Type = Uint
-		*(*uint64)(unsafe.Pointer(&p.Value)) = v.Uint()
+		p.SetUint(v.Uint())
 	case reflect.Float32, reflect.Float64:
 		p.Type = Float
-		*(*float64)(unsafe.Pointer(&p.Value)) = v.Float()
+		p.SetFloat(v.Float())
 	case reflect.String:
 		p.Type = String
-		*(*string)(unsafe.Pointer(&p.Value)) = v.String()
+		p.SetString(v.String())
 	}
 }
 
@@ -411,23 +468,27 @@ func (e structEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 }
 
 func decodeValue(l *Buffer, p *Value, v reflect.Value) {
-	switch p.Type {
-	case Nil:
+	if p.Type == Nil {
 		return
+	}
+	v = makeValue(v)
+	switch p.Type {
 	case Bool:
-		fromSimple(p, v)
+		decodeBool(p.Bool(), v)
 	case Int:
-		fromSimple(p, v)
+		decodeInt(p.Int(), v)
 	case Uint:
-		fromSimple(p, v)
+		decodeUint(p.Uint(), v)
 	case Float:
-		fromSimple(p, v)
+		decodeFloat(p.Float(), v)
 	case String:
-		fromSimple(p, v)
+		decodeString(p.String(), v)
+	case Bytes:
+		decodeBytes(p.Bytes(), v)
 	case Slice:
-		fromSlice(l, p, v)
+		decodeSlice(l, p, v)
 	case Map:
-		fromMap(l, p, v)
+		decodeMap(l, p, v)
 	default:
 		log.Println("should never reach here")
 	}
@@ -438,15 +499,17 @@ func valueInterface(l *Buffer, p Value) interface{} {
 	case Nil:
 		return nil
 	case Bool:
-		return *(*bool)(unsafe.Pointer(&p.Value))
+		return p.Bool()
 	case Int:
-		return *(*int64)(unsafe.Pointer(&p.Value))
+		return p.Int()
 	case Uint:
-		return *(*uint64)(unsafe.Pointer(&p.Value))
+		return p.Uint()
 	case Float:
-		return *(*float64)(unsafe.Pointer(&p.Value))
+		return p.Float()
 	case String:
-		return *(*string)(unsafe.Pointer(&p.Value))
+		return p.String()
+	case Bytes:
+		return p.Bytes()
 	case Slice:
 		arr := l.buf[p.First : p.First+p.Length]
 		return arrayInterface(l, arr)
@@ -475,113 +538,180 @@ func objectInterface(l *Buffer, v []Value) map[string]interface{} {
 	return r
 }
 
-func fromSimple(p *Value, v reflect.Value) {
-	v = makeValue(v)
+// decodeBool decodes bool value to v.
+func decodeBool(b bool, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		switch p.Type {
-		case Int:
-			i := *(*int64)(unsafe.Pointer(&p.Value))
-			v.Set(reflect.ValueOf(i))
-		case Uint:
-			u := *(*uint64)(unsafe.Pointer(&p.Value))
-			v.Set(reflect.ValueOf(u))
-		case Float:
-			f := *(*float64)(unsafe.Pointer(&p.Value))
-			v.Set(reflect.ValueOf(f))
-		case String:
-			s := *(*string)(unsafe.Pointer(&p.Value))
-			v.Set(reflect.ValueOf(s))
-		}
+		v.Set(reflect.ValueOf(b))
 	case reflect.Bool:
-		b := *(*bool)(unsafe.Pointer(&p.Value))
 		v.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		switch p.Type {
-		case Int:
-			i := *(*int64)(unsafe.Pointer(&p.Value))
-			v.SetInt(i)
-		case Uint:
-			u := *(*uint64)(unsafe.Pointer(&p.Value))
-			v.SetInt(int64(u))
-		case Float:
-			f := *(*float64)(unsafe.Pointer(&p.Value))
-			v.SetInt(int64(f))
-		case String:
-			s := *(*string)(unsafe.Pointer(&p.Value))
-			i, err := strconv.ParseInt(s, 10, 64)
-			if err != nil {
-				panic(err)
-			}
-			v.SetInt(i)
+		i := int64(0)
+		if b {
+			i = 1
 		}
+		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		switch p.Type {
-		case Int:
-			i := *(*int64)(unsafe.Pointer(&p.Value))
-			v.SetUint(uint64(i))
-		case Uint:
-			u := *(*uint64)(unsafe.Pointer(&p.Value))
-			v.SetUint(u)
-		case Float:
-			f := *(*float64)(unsafe.Pointer(&p.Value))
-			v.SetUint(uint64(f))
-		case String:
-			s := *(*string)(unsafe.Pointer(&p.Value))
-			u, err := strconv.ParseUint(s, 10, 64)
-			if err != nil {
-				panic(err)
-			}
-			v.SetUint(u)
+		u := uint64(0)
+		if b {
+			u = 1
 		}
+		v.SetUint(u)
 	case reflect.Float32, reflect.Float64:
-		switch p.Type {
-		case Int:
-			i := *(*int64)(unsafe.Pointer(&p.Value))
-			v.SetFloat(float64(i))
-		case Uint:
-			u := *(*uint64)(unsafe.Pointer(&p.Value))
-			v.SetFloat(float64(u))
-		case Float:
-			f := *(*float64)(unsafe.Pointer(&p.Value))
-			v.SetFloat(f)
-		case String:
-			s := *(*string)(unsafe.Pointer(&p.Value))
-			f, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				panic(err)
-			}
-			v.SetFloat(f)
+		f := float64(0)
+		if b {
+			f = 1
 		}
+		v.SetFloat(f)
 	case reflect.String:
-		switch p.Type {
-		case Int:
-			i := *(*int64)(unsafe.Pointer(&p.Value))
-			s := strconv.FormatInt(i, 10)
-			v.SetString(s)
-		case Uint:
-			u := *(*uint64)(unsafe.Pointer(&p.Value))
-			s := strconv.FormatUint(u, 10)
-			v.SetString(s)
-		case Float:
-			f := *(*float64)(unsafe.Pointer(&p.Value))
-			s := strconv.FormatFloat(f, 'g', -1, 64)
-			v.SetString(s)
-		case String:
-			s := *(*string)(unsafe.Pointer(&p.Value))
-			v.SetString(s)
-		}
+		s := strconv.FormatBool(b)
+		v.SetString(s)
 	default:
 		panic(nil)
 	}
 }
 
-func fromSlice(l *Buffer, p *Value, v reflect.Value) {
+// decodeInt decodes int value to v.
+func decodeInt(i int64, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface:
+		v.Set(reflect.ValueOf(i))
+	case reflect.Bool:
+		v.SetBool(i == 1)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v.SetInt(i)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v.SetUint(uint64(i))
+	case reflect.Float32, reflect.Float64:
+		v.SetFloat(float64(i))
+	case reflect.String:
+		s := strconv.FormatInt(i, 64)
+		v.SetString(s)
+	default:
+		panic(nil)
+	}
+}
+
+// decodeUint decodes uint value to v.
+func decodeUint(u uint64, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface:
+		v.Set(reflect.ValueOf(u))
+	case reflect.Bool:
+		v.SetBool(u == 1)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v.SetInt(int64(u))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v.SetUint(u)
+	case reflect.Float32, reflect.Float64:
+		v.SetFloat(float64(u))
+	case reflect.String:
+		s := strconv.FormatUint(u, 64)
+		v.SetString(s)
+	default:
+		panic(nil)
+	}
+}
+
+// decodeFloat decodes float value to v.
+func decodeFloat(f float64, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface:
+		v.Set(reflect.ValueOf(f))
+	case reflect.Bool:
+		v.SetBool(f == 1)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v.SetInt(int64(f))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v.SetUint(uint64(f))
+	case reflect.Float32, reflect.Float64:
+		v.SetFloat(f)
+	case reflect.String:
+		s := strconv.FormatFloat(f, 'f', -1, 64)
+		v.SetString(s)
+	default:
+		panic(nil)
+	}
+}
+
+// decodeString decodes string value to v.
+func decodeString(s string, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface:
+		v.Set(reflect.ValueOf(s))
+	case reflect.Bool:
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			panic(err)
+		}
+		v.SetBool(b)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		v.SetInt(i)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		u, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		v.SetUint(u)
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			panic(err)
+		}
+		v.SetFloat(f)
+	case reflect.String:
+		v.SetString(s)
+	default:
+		panic(nil)
+	}
+}
+
+// decodeBytes decodes []byte value to v.
+func decodeBytes(b []byte, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface:
+		v.Set(reflect.ValueOf(b))
+	case reflect.Bool:
+		b, err := strconv.ParseBool(string(b))
+		if err != nil {
+			panic(err)
+		}
+		v.SetBool(b)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i, err := strconv.ParseInt(string(b), 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		v.SetInt(i)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		u, err := strconv.ParseUint(string(b), 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		v.SetUint(u)
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(string(b), 64)
+		if err != nil {
+			panic(err)
+		}
+		v.SetFloat(f)
+	case reflect.String:
+		v.SetString(string(b))
+	default:
+		panic(nil)
+	}
+}
+
+// decodeSlice decodes slice value to v.
+func decodeSlice(l *Buffer, p *Value, v reflect.Value) {
 	var arr []Value
 	if p.Length > 0 {
 		arr = l.buf[p.First : p.First+p.Length]
 	}
-	v = makeValue(v)
 	switch v.Kind() {
 	case reflect.Interface:
 		arr := arrayInterface(l, arr)
@@ -610,8 +740,8 @@ func fromSlice(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
-func fromMap(l *Buffer, p *Value, v reflect.Value) {
-	v = makeValue(v)
+// decodeMap decodes map value to v.
+func decodeMap(l *Buffer, p *Value, v reflect.Value) {
 	t := v.Type()
 	switch v.Kind() {
 	case reflect.Interface:
@@ -628,13 +758,13 @@ func fromMap(l *Buffer, p *Value, v reflect.Value) {
 		if v.IsNil() {
 			v.Set(reflect.MakeMap(t))
 		}
-		fromMapToMap(l, p, v, t)
+		decodeMapToMap(l, p, v, t)
 	case reflect.Struct:
-		fromMapToStruct(l, p, v, t)
+		decodeMapToStruct(l, p, v, t)
 	}
 }
 
-func fromMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
+func decodeMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	elemType := t.Elem()
 	for i := 0; i < p.Length; i++ {
 		elemValue := reflect.New(elemType).Elem()
@@ -644,7 +774,7 @@ func fromMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	}
 }
 
-func fromMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
+func decodeMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 	fields := cachedTypeFields(t)
 	for i := 0; i < p.Length; i++ {
 		e := &l.buf[p.First+i]
