@@ -178,20 +178,20 @@ var fastEncoders []encoderFunc
 func init() {
 	fastEncoders = []encoderFunc{
 		nil,              //Invalid
-		valueEncoder,     //Bool
-		valueEncoder,     //Int
-		valueEncoder,     //Int8
-		valueEncoder,     //Int16
-		valueEncoder,     //Int32
-		valueEncoder,     //Int64
-		valueEncoder,     //Uint
-		valueEncoder,     //Uint8
-		valueEncoder,     //Uint16
-		valueEncoder,     //Uint32
-		valueEncoder,     //Uint64
+		boolEncoder,      //Bool
+		intEncoder,       //Int
+		intEncoder,       //Int8
+		intEncoder,       //Int16
+		intEncoder,       //Int32
+		intEncoder,       //Int64
+		uintEncoder,      //Uint
+		uintEncoder,      //Uint8
+		uintEncoder,      //Uint16
+		uintEncoder,      //Uint32
+		uintEncoder,      //Uint64
 		nil,              //Uintptr
-		valueEncoder,     //Float32
-		valueEncoder,     //Float64
+		floatEncoder,     //Float32
+		floatEncoder,     //Float64
 		nil,              //Complex64
 		nil,              //Complex128
 		nil,              //Array
@@ -201,7 +201,7 @@ func init() {
 		nil,              //Map
 		nil,              //Pointer
 		nil,              //Slice
-		valueEncoder,     //String
+		stringEncoder,    //String
 		nil,              //Struct
 		nil,              //UnsafePointer
 	}
@@ -269,11 +269,52 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	}
 }
 
+// boolEncoder encoder for bool
+func boolEncoder(l *Buffer, p *Value, v reflect.Value) {
+	p.Type = Bool
+	p.SetBool(v.Bool())
+}
+
+// intEncoder encoder for int/int8/int16/int32/int64
+func intEncoder(l *Buffer, p *Value, v reflect.Value) {
+	p.Type = Int
+	p.SetInt(v.Int())
+}
+
+// uintEncoder encoder for uint/uint8/uint16/uint32/uint64
+func uintEncoder(l *Buffer, p *Value, v reflect.Value) {
+	p.Type = Uint
+	p.SetUint(v.Uint())
+}
+
+// floatEncoder encoder for float32/float64
+func floatEncoder(l *Buffer, p *Value, v reflect.Value) {
+	p.Type = Float
+	p.SetFloat(v.Float())
+}
+
+// stringEncoder encoder for string
+func stringEncoder(l *Buffer, p *Value, v reflect.Value) {
+	p.Type = String
+	p.SetString(v.String())
+}
+
+// interfaceEncoder encoder for interface{}
+func interfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
+	if v.IsNil() {
+		p.Type = Nil
+		return
+	}
+	encodeValue(l, p, v.Elem())
+}
+
+// sliceByteEncoder encoder for []byte
 func sliceByteEncoder(l *Buffer, p *Value, v reflect.Value) {
 	p.Type = Bytes
 	p.SetBytes(v.Interface().([]byte))
 }
 
+// sliceInterfaceEncoder encoder for []interface{}
 func sliceInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 	s := v.Interface().([]interface{})
 	n := len(s)
@@ -294,6 +335,7 @@ func sliceInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
+// mapStringInterfaceEncoder encoder for map[string]interface{}
 func mapStringInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 	m := v.Interface().(map[string]interface{})
 	n := len(m)
@@ -317,41 +359,7 @@ func mapStringInterfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
-func validMapKey(key reflect.Value) (string, bool) {
-	if key.Kind() != reflect.String {
-		return "", false
-	}
-	return key.String(), true
-}
-
-func interfaceEncoder(l *Buffer, p *Value, v reflect.Value) {
-	if v.IsNil() {
-		p.Type = Nil
-		return
-	}
-	encodeValue(l, p, v.Elem())
-}
-
-func valueEncoder(l *Buffer, p *Value, v reflect.Value) {
-	switch v.Kind() {
-	case reflect.Bool:
-		p.Type = Bool
-		p.SetBool(v.Bool())
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		p.Type = Int
-		p.SetInt(v.Int())
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		p.Type = Uint
-		p.SetUint(v.Uint())
-	case reflect.Float32, reflect.Float64:
-		p.Type = Float
-		p.SetFloat(v.Float())
-	case reflect.String:
-		p.Type = String
-		p.SetString(v.String())
-	}
-}
-
+// ptrEncoder encoder for pointer
 type ptrEncoder struct {
 	elemEnc encoderFunc
 }
@@ -369,6 +377,7 @@ func (e ptrEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	e.elemEnc(l, p, v.Elem())
 }
 
+// arrayEncoder encoder for array or slice
 type arrayEncoder struct {
 	elemEnc encoderFunc
 }
@@ -393,6 +402,7 @@ func (e arrayEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
+// mapEncoder encoder for map
 type mapEncoder struct {
 	elemEnc encoderFunc
 }
@@ -400,6 +410,13 @@ type mapEncoder struct {
 func newMapEncoder(t reflect.Type) encoderFunc {
 	e := mapEncoder{typeEncoder(t.Elem())}
 	return e.encode
+}
+
+func validMapKey(key reflect.Value) (string, bool) {
+	if key.Kind() != reflect.String {
+		return "", false
+	}
+	return key.String(), true
 }
 
 func (e mapEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
@@ -425,6 +442,7 @@ func (e mapEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
+// structEncoder encoder for struct
 type structEncoder struct {
 	fields structFields
 }
@@ -467,6 +485,7 @@ func (e structEncoder) encode(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
+// decodeValue decode value
 func decodeValue(l *Buffer, p *Value, v reflect.Value) {
 	if p.Type == Nil {
 		return
@@ -494,6 +513,7 @@ func decodeValue(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
+// valueInterface decode to interface{}
 func valueInterface(l *Buffer, p Value) interface{} {
 	switch p.Type {
 	case Nil:
@@ -522,6 +542,7 @@ func valueInterface(l *Buffer, p Value) interface{} {
 	}
 }
 
+// arrayInterface decode to []interface{}
 func arrayInterface(l *Buffer, v []Value) []interface{} {
 	r := make([]interface{}, len(v))
 	for i, p := range v {
@@ -530,6 +551,7 @@ func arrayInterface(l *Buffer, v []Value) []interface{} {
 	return r
 }
 
+// objectInterface decode to map[string]interface{}
 func objectInterface(l *Buffer, v []Value) map[string]interface{} {
 	r := make(map[string]interface{}, len(v))
 	for _, p := range v {
@@ -538,7 +560,7 @@ func objectInterface(l *Buffer, v []Value) map[string]interface{} {
 	return r
 }
 
-// decodeBool decodes bool value to v.
+// decodeBool decodes bool value
 func decodeBool(b bool, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
@@ -571,7 +593,7 @@ func decodeBool(b bool, v reflect.Value) {
 	}
 }
 
-// decodeInt decodes int value to v.
+// decodeInt decodes int value
 func decodeInt(i int64, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
@@ -592,7 +614,7 @@ func decodeInt(i int64, v reflect.Value) {
 	}
 }
 
-// decodeUint decodes uint value to v.
+// decodeUint decodes uint value
 func decodeUint(u uint64, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
@@ -613,7 +635,7 @@ func decodeUint(u uint64, v reflect.Value) {
 	}
 }
 
-// decodeFloat decodes float value to v.
+// decodeFloat decodes float value
 func decodeFloat(f float64, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
@@ -634,7 +656,7 @@ func decodeFloat(f float64, v reflect.Value) {
 	}
 }
 
-// decodeString decodes string value to v.
+// decodeString decodes string value
 func decodeString(s string, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
@@ -670,7 +692,7 @@ func decodeString(s string, v reflect.Value) {
 	}
 }
 
-// decodeBytes decodes []byte value to v.
+// decodeBytes decodes []byte value
 func decodeBytes(b []byte, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
@@ -706,7 +728,7 @@ func decodeBytes(b []byte, v reflect.Value) {
 	}
 }
 
-// decodeSlice decodes slice value to v.
+// decodeSlice decodes slice value
 func decodeSlice(l *Buffer, p *Value, v reflect.Value) {
 	var arr []Value
 	if p.Length > 0 {
@@ -740,7 +762,7 @@ func decodeSlice(l *Buffer, p *Value, v reflect.Value) {
 	}
 }
 
-// decodeMap decodes map value to v.
+// decodeMap decodes map value
 func decodeMap(l *Buffer, p *Value, v reflect.Value) {
 	t := v.Type()
 	switch v.Kind() {
