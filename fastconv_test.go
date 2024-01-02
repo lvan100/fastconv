@@ -1,7 +1,6 @@
 package fastconv
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -9,39 +8,16 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unsafe"
 )
 
 func equalValues(got, expect []Value) bool {
-	if len(got) != len(expect) {
-		return false
-	}
-	for i := 0; i < len(got); i++ {
-		a := got[i]
-		b := expect[i]
-		if a.Type != b.Type || a.Name != b.Name || a.Parent != b.Parent {
-			return false
-		}
-		switch a.Type {
-		case Nil, Bool, Int, Uint, Float, Slice, Map:
-			if a.Data != b.Data || a.Length != b.Length || a.First != b.First {
-				return false
-			}
-		case String:
-			s1 := *(*string)(unsafe.Pointer(&a.Data))
-			s2 := *(*string)(unsafe.Pointer(&b.Data))
-			if strings.Compare(s1, s2) != 0 || a.First != b.First {
-				return false
-			}
-		case Bytes:
-			s1 := *(*[]byte)(unsafe.Pointer(&a.Data))
-			s2 := *(*[]byte)(unsafe.Pointer(&b.Data))
-			if bytes.Compare(s1, s2) != 0 {
-				return false
-			}
-		}
-	}
-	return true
+	var gotValue interface{}
+	var expectValue interface{}
+	gotBuffer := &Buffer{buf: got}
+	expectBuffer := &Buffer{buf: expect}
+	decodeValue(gotBuffer, &gotBuffer.buf[0], reflect.ValueOf(&gotValue))
+	decodeValue(expectBuffer, &expectBuffer.buf[0], reflect.ValueOf(&expectValue))
+	return reflect.DeepEqual(gotValue, expectValue)
 }
 
 func Test_encodeValue(t *testing.T) {

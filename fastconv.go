@@ -19,7 +19,6 @@ package fastconv
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -152,14 +151,17 @@ func (p *Value) SetBytes(s []byte) {
 	*(*[]byte)(unsafe.Pointer(&p.Data)) = s
 }
 
+// A Buffer is a variable-sized buffer of Value.
 type Buffer struct {
 	buf []Value
 }
 
+// Reset resets the buffer to be empty.
 func (b *Buffer) Reset() {
 	b.buf = b.buf[:0]
 }
 
+// Append appends n [Value]s to the buffer, growing if needed.
 func (b *Buffer) Append(n int) {
 	b.grow(n)
 	for i := 0; i < n; i++ {
@@ -167,6 +169,7 @@ func (b *Buffer) Append(n int) {
 	}
 }
 
+// grow grows the buffer to guarantee space for n more [Value]s.
 func (b *Buffer) grow(n int) {
 	c := cap(b.buf)
 	l := len(b.buf)
@@ -195,7 +198,7 @@ func newBuffer() *Buffer {
 	}
 }
 
-// encodeValue encodes v to p [*Value] and l [*Buffer].
+// encodeValue encodes v to p [*Value] which stored in l [*Buffer].
 func encodeValue(l *Buffer, current int, p *Value, v reflect.Value) {
 	if v.IsValid() {
 		cachedTypeEncoder(v.Type())(l, current, p, v)
@@ -210,10 +213,12 @@ var (
 	stFieldCache sync.Map // map[reflect.Type]structFields
 )
 
+// Ptr returns the pointer to the given value.
 func Ptr[T any](t T) *T {
 	return &t
 }
 
+// TypeFor returns the [reflect.Type] that represents the type T.
 func TypeFor[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
@@ -225,39 +230,40 @@ var (
 
 func init() {
 	fastEncoders = []encoderFunc{
-		nil,              //Invalid
-		boolEncoder,      //Bool
-		intEncoder,       //Int
-		intEncoder,       //Int8
-		intEncoder,       //Int16
-		intEncoder,       //Int32
-		intEncoder,       //Int64
-		uintEncoder,      //Uint
-		uintEncoder,      //Uint8
-		uintEncoder,      //Uint16
-		uintEncoder,      //Uint32
-		uintEncoder,      //Uint64
-		nil,              //Uintptr
-		floatEncoder,     //Float32
-		floatEncoder,     //Float64
-		nil,              //Complex64
-		nil,              //Complex128
-		nil,              //Array
-		nil,              //Chan
-		nil,              //Func
-		interfaceEncoder, //Interface
-		nil,              //Map
-		nil,              //Pointer
-		nil,              //Slice
-		stringEncoder,    //String
-		nil,              //Struct
-		nil,              //UnsafePointer
+		nil,              // Invalid
+		boolEncoder,      // Bool
+		intEncoder,       // Int
+		intEncoder,       // Int8
+		intEncoder,       // Int16
+		intEncoder,       // Int32
+		intEncoder,       // Int64
+		uintEncoder,      // Uint
+		uintEncoder,      // Uint8
+		uintEncoder,      // Uint16
+		uintEncoder,      // Uint32
+		uintEncoder,      // Uint64
+		nil,              // Uintptr
+		floatEncoder,     // Float32
+		floatEncoder,     // Float64
+		nil,              // Complex64
+		nil,              // Complex128
+		nil,              // Array
+		nil,              // Chan
+		nil,              // Func
+		interfaceEncoder, // Interface
+		nil,              // Map
+		nil,              // Pointer
+		nil,              // Slice
+		stringEncoder,    // String
+		nil,              // Struct
+		nil,              // UnsafePointer
 	}
 }
 
-// cachedTypeEncoder gets the encoderFunc of t stored in the cache.
+// cachedTypeEncoder gets the encoderFunc stored in the cache of type t.
 func cachedTypeEncoder(t reflect.Type) encoderFunc {
 
+	// fast judgement to avoid concurrent competition
 	switch k := t.Kind(); k {
 	case reflect.Slice:
 		if t == typeSliceInterface {
@@ -346,7 +352,7 @@ func stringEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = String
 	old := p.Parent
 	p.SetString(v.String())
-	if old != p.Parent {
+	if old != p.Parent { // should never happen
 		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
 	}
 }
@@ -365,7 +371,7 @@ func sliceByteEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = Bytes
 	old := p.Parent
 	p.SetBytes(v.Interface().([]byte))
-	if p.Parent != old {
+	if p.Parent != old { // should never happen
 		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
 	}
 }
@@ -551,7 +557,7 @@ func (e structEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value)
 	}
 }
 
-// decodeValue decode value
+// decodeValue decodes the value encoded in p and stores it in v.
 func decodeValue(l *Buffer, p *Value, v reflect.Value) {
 	if p.Type == Nil {
 		return
@@ -574,12 +580,10 @@ func decodeValue(l *Buffer, p *Value, v reflect.Value) {
 		decodeSlice(l, p, v)
 	case Map:
 		decodeMap(l, p, v)
-	default:
-		log.Println("should never reach here")
 	}
 }
 
-// valueInterface decode to interface{}
+// valueInterface returns p's underlying value as interface{}.
 func valueInterface(l *Buffer, p Value) interface{} {
 	switch p.Type {
 	case Nil:
@@ -602,13 +606,11 @@ func valueInterface(l *Buffer, p Value) interface{} {
 	case Map:
 		arr := l.buf[p.First : p.First+p.Length]
 		return objectInterface(l, arr)
-	default:
-		log.Println("should never reach here")
-		return nil
 	}
+	return nil
 }
 
-// arrayInterface decode to []interface{}
+// arrayInterface returns p's underlying value as []interface{}.
 func arrayInterface(l *Buffer, v []Value) []interface{} {
 	r := make([]interface{}, len(v))
 	for i, p := range v {
@@ -617,7 +619,7 @@ func arrayInterface(l *Buffer, v []Value) []interface{} {
 	return r
 }
 
-// objectInterface decode to map[string]interface{}
+// objectInterface returns p's underlying value as map[string]interface{}.
 func objectInterface(l *Buffer, v []Value) map[string]interface{} {
 	r := make(map[string]interface{}, len(v))
 	for _, p := range v {
