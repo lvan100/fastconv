@@ -26,8 +26,6 @@ import (
 	"sync"
 	"unicode"
 	"unsafe"
-
-	"github.com/lvan100/fastconv/internal"
 )
 
 func Convert(src, dest any) error {
@@ -65,6 +63,7 @@ func Convert(src, dest any) error {
 	return nil
 }
 
+// A Kind represents the type of value stored in Value.
 type Kind int
 
 const (
@@ -79,61 +78,75 @@ const (
 	Map
 )
 
-// Value 当 Type 为 Bool、Int、Uint、Float 时，只使用 Data 字段，当 Type 为 String 时，
-// 使用 Data、Length 两个字段，当 Type 为 Bytes 时，使用 Data、Length、First 三个字段。
+// Value is used to store a value.
+// When the Type is Bool, Int, Uint, Float, only the Data field is used.
+// When the Type is String, the Data and Length fields are used.
+// When the Type is Bytes, the Data, Length, and First fields are used.
 type Value struct {
 	Type   Kind
 	Name   string
 	Data   [8]byte
-	Length int // 孩子数量
-	First  int // 首个孩子
-	Parent int // 父亲节点
+	Length int // number of children
+	First  int // position of first
+	Parent int // position of parent
 }
 
+// Bool returns v's underlying value.
 func (p *Value) Bool() bool {
 	return *(*bool)(unsafe.Pointer(&p.Data))
 }
 
+// SetBool sets v's underlying value.
 func (p *Value) SetBool(b bool) {
 	*(*bool)(unsafe.Pointer(&p.Data)) = b
 }
 
+// Int returns v's underlying value.
 func (p *Value) Int() int64 {
 	return *(*int64)(unsafe.Pointer(&p.Data))
 }
 
+// SetInt sets v's underlying value.
 func (p *Value) SetInt(i int64) {
 	*(*int64)(unsafe.Pointer(&p.Data)) = i
 }
 
+// Uint returns v's underlying value.
 func (p *Value) Uint() uint64 {
 	return *(*uint64)(unsafe.Pointer(&p.Data))
 }
 
+// SetUint sets v's underlying value.
 func (p *Value) SetUint(u uint64) {
 	*(*uint64)(unsafe.Pointer(&p.Data)) = u
 }
 
+// Float returns v's underlying value.
 func (p *Value) Float() float64 {
 	return *(*float64)(unsafe.Pointer(&p.Data))
 }
 
+// SetFloat sets v's underlying value.
 func (p *Value) SetFloat(f float64) {
 	*(*float64)(unsafe.Pointer(&p.Data)) = f
 }
 
+// String returns v's underlying value.
 func (p *Value) String() string {
 	return *(*string)(unsafe.Pointer(&p.Data))
 }
 
+// SetString sets v's underlying value.
 func (p *Value) SetString(s string) {
 	*(*string)(unsafe.Pointer(&p.Data)) = s
 }
 
+// Bytes returns v's underlying value.
 func (p *Value) Bytes() []byte {
 	return *(*[]byte)(unsafe.Pointer(&p.Data))
 }
 
+// SetBytes sets v's underlying value.
 func (p *Value) SetBytes(s []byte) {
 	*(*[]byte)(unsafe.Pointer(&p.Data)) = s
 }
@@ -195,9 +208,17 @@ var (
 	encoderCache sync.Map // map[reflect.Type]encoderFunc
 )
 
+func Ptr[T any](t T) *T {
+	return &t
+}
+
+func TypeFor[T any]() reflect.Type {
+	return reflect.TypeOf((*T)(nil)).Elem()
+}
+
 var (
-	typeSliceInterface     = internal.TypeFor[[]interface{}]()
-	typeMapStringInterface = internal.TypeFor[map[string]interface{}]()
+	typeSliceInterface     = TypeFor[[]interface{}]()
+	typeMapStringInterface = TypeFor[map[string]interface{}]()
 )
 
 func init() {
