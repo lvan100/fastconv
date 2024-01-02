@@ -18,6 +18,7 @@ package fastconv
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"sort"
@@ -197,7 +198,7 @@ func newBuffer() *Buffer {
 // encodeValue encodes v to p [*Value] and l [*Buffer].
 func encodeValue(l *Buffer, current int, p *Value, v reflect.Value) {
 	if v.IsValid() {
-		typeEncoder(v.Type())(l, current, p, v)
+		cachedTypeEncoder(v.Type())(l, current, p, v)
 	}
 }
 
@@ -206,6 +207,7 @@ type encoderFunc func(l *Buffer, current int, p *Value, v reflect.Value)
 var (
 	fastEncoders []encoderFunc
 	encoderCache sync.Map // map[reflect.Type]encoderFunc
+	stFieldCache sync.Map // map[reflect.Type]structFields
 )
 
 func Ptr[T any](t T) *T {
@@ -253,7 +255,8 @@ func init() {
 	}
 }
 
-func typeEncoder(t reflect.Type) encoderFunc {
+// cachedTypeEncoder gets the encoderFunc of t stored in the cache.
+func cachedTypeEncoder(t reflect.Type) encoderFunc {
 
 	switch k := t.Kind(); k {
 	case reflect.Slice:
@@ -298,6 +301,7 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	return f
 }
 
+// newTypeEncoder constructs an encoderFunc for a type.
 func newTypeEncoder(t reflect.Type) encoderFunc {
 	switch t.Kind() {
 	case reflect.Pointer:
@@ -313,41 +317,41 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	}
 }
 
-// boolEncoder encoder for bool
+// boolEncoder is the encoderFunc of bool.
 func boolEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = Bool
 	p.SetBool(v.Bool())
 }
 
-// intEncoder encoder for int/int8/int16/int32/int64
+// intEncoder is the encoderFunc of int, int8, int16, int32 and int64.
 func intEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = Int
 	p.SetInt(v.Int())
 }
 
-// uintEncoder encoder for uint/uint8/uint16/uint32/uint64
+// uintEncoder is the encoderFunc of uint, uint8, uint16, uint32 and uint64.
 func uintEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = Uint
 	p.SetUint(v.Uint())
 }
 
-// floatEncoder encoder for float32/float64
+// floatEncoder is the encoderFunc of float32 and float64.
 func floatEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = Float
 	p.SetFloat(v.Float())
 }
 
-// stringEncoder encoder for string
+// stringEncoder is the encoderFunc of string.
 func stringEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = String
 	old := p.Parent
 	p.SetString(v.String())
 	if old != p.Parent {
-		panic(nil)
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
 	}
 }
 
-// interfaceEncoder encoder for interface{}
+// interfaceEncoder is the encoderFunc of interface{}.
 func interfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	if v.IsNil() {
 		p.Type = Nil
@@ -356,17 +360,17 @@ func interfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	encodeValue(l, current, p, v.Elem())
 }
 
-// sliceByteEncoder encoder for []byte
+// sliceByteEncoder is the encoderFunc of []byte.
 func sliceByteEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	p.Type = Bytes
 	old := p.Parent
 	p.SetBytes(v.Interface().([]byte))
 	if p.Parent != old {
-		panic(nil)
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
 	}
 }
 
-// sliceInterfaceEncoder encoder for []interface{}
+// sliceInterfaceEncoder is the encoderFunc of []interface{}.
 func sliceInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	s := v.Interface().([]interface{})
 	n := len(s)
@@ -389,7 +393,7 @@ func sliceInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	}
 }
 
-// mapStringInterfaceEncoder encoder for map[string]interface{}
+// mapStringInterfaceEncoder is the encoderFunc of map[string]interface{}.
 func mapStringInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 	m := v.Interface().(map[string]interface{})
 	n := len(m)
@@ -402,7 +406,7 @@ func mapStringInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value
 	p.First = end
 	l.Append(n)
 	i := 0
-	for mKey, mValue := range m {
+	for mKey, mValue := range m { // no need to sort keys
 		if mValue == nil {
 			l.buf[end+i] = Value{Type: Nil, Parent: current}
 		} else {
@@ -415,13 +419,13 @@ func mapStringInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value
 	}
 }
 
-// ptrEncoder encoder for pointer
+// ptrEncoder is the encoderFunc of pointer type (*T).
 type ptrEncoder struct {
 	elemEnc encoderFunc
 }
 
 func newPtrEncoder(t reflect.Type) encoderFunc {
-	e := ptrEncoder{typeEncoder(t.Elem())}
+	e := ptrEncoder{cachedTypeEncoder(t.Elem())}
 	return e.encode
 }
 
@@ -433,13 +437,13 @@ func (e ptrEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
 	e.elemEnc(l, current, p, v.Elem())
 }
 
-// arrayEncoder encoder for array or slice
+// arrayEncoder is the encoderFunc of array and slice.
 type arrayEncoder struct {
 	elemEnc encoderFunc
 }
 
 func newArrayEncoder(t reflect.Type) encoderFunc {
-	e := arrayEncoder{typeEncoder(t.Elem())}
+	e := arrayEncoder{cachedTypeEncoder(t.Elem())}
 	return e.encode
 }
 
@@ -460,13 +464,13 @@ func (e arrayEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) 
 	}
 }
 
-// mapEncoder encoder for map
+// mapEncoder is the encoderFunc of map.
 type mapEncoder struct {
 	elemEnc encoderFunc
 }
 
 func newMapEncoder(t reflect.Type) encoderFunc {
-	e := mapEncoder{typeEncoder(t.Elem())}
+	e := mapEncoder{cachedTypeEncoder(t.Elem())}
 	return e.encode
 }
 
@@ -489,7 +493,7 @@ func (e mapEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
 	l.Append(n)
 	i := 0
 	iter := v.MapRange()
-	for iter.Next() {
+	for iter.Next() { // no need to sort keys
 		name, valid := validMapKey(iter.Key())
 		if !valid {
 			continue
@@ -502,7 +506,7 @@ func (e mapEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
 	}
 }
 
-// structEncoder encoder for struct
+// structEncoder is the encoderFunc of struct.
 type structEncoder struct {
 	fields structFields
 }
@@ -971,14 +975,12 @@ func (x byIndex) Less(i, j int) bool {
 	return len(x[i].index) < len(x[j].index)
 }
 
-var fieldCache sync.Map // map[reflect.Type]structFields
-
 // cachedTypeFields is like typeFields but uses a cache to avoid repeated work.
 func cachedTypeFields(t reflect.Type) structFields {
-	if f, ok := fieldCache.Load(t); ok {
+	if f, ok := stFieldCache.Load(t); ok {
 		return f.(structFields)
 	}
-	f, _ := fieldCache.LoadOrStore(t, typeFields(t))
+	f, _ := stFieldCache.LoadOrStore(t, typeFields(t))
 	return f.(structFields)
 }
 
@@ -1127,7 +1129,7 @@ func typeFields(t reflect.Type) structFields {
 
 	for i := range fields {
 		f := &fields[i]
-		f.encoder = typeEncoder(typeByIndex(t, f.index))
+		f.encoder = cachedTypeEncoder(typeByIndex(t, f.index))
 	}
 
 	exactNameIndex := make(map[string]*structField, len(fields))
