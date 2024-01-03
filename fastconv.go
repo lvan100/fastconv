@@ -59,8 +59,9 @@ func Convert(src, dest any) error {
 	//	}
 	//}
 
-	decodeValue(l, &l.buf[0], destValue)
-	return nil
+	d := &decodeState{Buffer: l}
+	decodeValue(d, &d.buf[0], destValue)
+	return d.savedError
 }
 
 // A Kind represents the type of value stored in Value.
@@ -557,34 +558,42 @@ func (e structEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value)
 	}
 }
 
-// decodeValue decodes the value encoded in p and stores it in v.
-func decodeValue(l *Buffer, p *Value, v reflect.Value) {
-	if p.Type == Nil {
-		return
-	}
-	v = makeValue(v)
-	switch p.Type {
-	case Bool:
-		decodeBool(p.Bool(), v)
-	case Int:
-		decodeInt(p.Int(), v)
-	case Uint:
-		decodeUint(p.Uint(), v)
-	case Float:
-		decodeFloat(p.Float(), v)
-	case String:
-		decodeString(p.String(), v)
-	case Bytes:
-		decodeBytes(p.Bytes(), v)
-	case Slice:
-		decodeSlice(l, p, v)
-	case Map:
-		decodeMap(l, p, v)
+type decoderFunc func(d *decodeState, p *Value, v reflect.Value)
+
+var decoders []decoderFunc
+
+func init() {
+	decoders = []decoderFunc{
+		nil,          // Nil
+		decodeBool,   // Bool
+		decodeInt,    // Int
+		decodeUint,   // Uint
+		decodeFloat,  // Float
+		decodeString, // String
+		decodeBytes,  // Bytes
+		decodeSlice,  // Slice
+		decodeMap,    // Map
 	}
 }
 
-// valueInterface returns p's underlying value as interface{}.
-func valueInterface(l *Buffer, p Value) interface{} {
+type decodeState struct {
+	*Buffer
+	savedError error
+}
+
+func (d *decodeState) addErrorContext(p *Value, err error) {
+
+}
+
+// decodeValue decodes the value stored in p [*Value] into v [reflect.Value].
+func decodeValue(d *decodeState, p *Value, v reflect.Value) {
+	if f := decoders[p.Type]; f != nil {
+		f(d, p, makeValue(v))
+	}
+}
+
+// valueInterface returns p's underlying value as [interface{}].
+func valueInterface(d *decodeState, p *Value) interface{} {
 	switch p.Type {
 	case Nil:
 		return nil
@@ -601,210 +610,202 @@ func valueInterface(l *Buffer, p Value) interface{} {
 	case Bytes:
 		return p.Bytes()
 	case Slice:
-		arr := l.buf[p.First : p.First+p.Length]
-		return arrayInterface(l, arr)
+		arr := d.buf[p.First : p.First+p.Length]
+		return arrayInterface(d, arr)
 	case Map:
-		arr := l.buf[p.First : p.First+p.Length]
-		return objectInterface(l, arr)
+		arr := d.buf[p.First : p.First+p.Length]
+		return objectInterface(d, arr)
 	}
 	return nil
 }
 
-// arrayInterface returns p's underlying value as []interface{}.
-func arrayInterface(l *Buffer, v []Value) []interface{} {
+// arrayInterface returns p's underlying value as [[]interface{}].
+func arrayInterface(d *decodeState, v []Value) []interface{} {
 	r := make([]interface{}, len(v))
 	for i, p := range v {
-		r[i] = valueInterface(l, p)
+		r[i] = valueInterface(d, &p)
 	}
 	return r
 }
 
-// objectInterface returns p's underlying value as map[string]interface{}.
-func objectInterface(l *Buffer, v []Value) map[string]interface{} {
+// objectInterface returns p's underlying value as [map[string]interface{}].
+func objectInterface(d *decodeState, v []Value) map[string]interface{} {
 	r := make(map[string]interface{}, len(v))
 	for _, p := range v {
-		r[p.Name] = valueInterface(l, p)
+		r[p.Name] = valueInterface(d, &p)
 	}
 	return r
 }
 
-// decodeBool decodes bool value
-func decodeBool(b bool, v reflect.Value) {
+// decodeBool decodes a bool value into v.
+func decodeBool(d *decodeState, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(b))
+		v.Set(reflect.ValueOf(p.Bool()))
 	case reflect.Bool:
-		v.SetBool(b)
+		v.SetBool(p.Bool())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		i := int64(0)
-		if b {
+		if p.Bool() {
 			i = 1
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		u := uint64(0)
-		if b {
+		if p.Bool() {
 			u = 1
 		}
 		v.SetUint(u)
 	case reflect.Float32, reflect.Float64:
 		f := float64(0)
-		if b {
+		if p.Bool() {
 			f = 1
 		}
 		v.SetFloat(f)
 	case reflect.String:
-		s := strconv.FormatBool(b)
-		v.SetString(s)
-	default:
-		panic(nil)
+		v.SetString(strconv.FormatBool(p.Bool()))
 	}
 }
 
-// decodeInt decodes int value
-func decodeInt(i int64, v reflect.Value) {
+// decodeInt decodes a int64 value into v.
+func decodeInt(d *decodeState, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(i))
+		v.Set(reflect.ValueOf(p.Int()))
 	case reflect.Bool:
-		v.SetBool(i == 1)
+		v.SetBool(p.Int() == 1)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v.SetInt(i)
+		v.SetInt(p.Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v.SetUint(uint64(i))
+		v.SetUint(uint64(p.Int()))
 	case reflect.Float32, reflect.Float64:
-		v.SetFloat(float64(i))
+		v.SetFloat(float64(p.Int()))
 	case reflect.String:
-		s := strconv.FormatInt(i, 64)
-		v.SetString(s)
-	default:
-		panic(nil)
+		v.SetString(strconv.FormatInt(p.Int(), 64))
 	}
 }
 
-// decodeUint decodes uint value
-func decodeUint(u uint64, v reflect.Value) {
+// decodeUint decodes a uint64 value into v.
+func decodeUint(d *decodeState, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(u))
+		v.Set(reflect.ValueOf(p.Uint()))
 	case reflect.Bool:
-		v.SetBool(u == 1)
+		v.SetBool(p.Uint() == 1)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v.SetInt(int64(u))
+		v.SetInt(int64(p.Uint()))
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v.SetUint(u)
+		v.SetUint(p.Uint())
 	case reflect.Float32, reflect.Float64:
-		v.SetFloat(float64(u))
+		v.SetFloat(float64(p.Uint()))
 	case reflect.String:
-		s := strconv.FormatUint(u, 64)
-		v.SetString(s)
-	default:
-		panic(nil)
+		v.SetString(strconv.FormatUint(p.Uint(), 64))
 	}
 }
 
-// decodeFloat decodes float value
-func decodeFloat(f float64, v reflect.Value) {
+// decodeFloat decodes a float64 value into v.
+func decodeFloat(d *decodeState, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(f))
+		v.Set(reflect.ValueOf(p.Float()))
 	case reflect.Bool:
-		v.SetBool(f == 1)
+		v.SetBool(p.Float() == 1)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v.SetInt(int64(f))
+		v.SetInt(int64(p.Float()))
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v.SetUint(uint64(f))
+		v.SetUint(uint64(p.Float()))
 	case reflect.Float32, reflect.Float64:
-		v.SetFloat(f)
+		v.SetFloat(p.Float())
 	case reflect.String:
-		s := strconv.FormatFloat(f, 'f', -1, 64)
-		v.SetString(s)
-	default:
-		panic(nil)
+		v.SetString(strconv.FormatFloat(p.Float(), 'f', -1, 64))
 	}
 }
 
-// decodeString decodes string value
-func decodeString(s string, v reflect.Value) {
+// decodeString decodes a string value into v.
+func decodeString(d *decodeState, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(s))
+		v.Set(reflect.ValueOf(p.String()))
 	case reflect.Bool:
-		b, err := strconv.ParseBool(s)
+		b, err := strconv.ParseBool(p.String())
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(s, 10, 64)
+		i, err := strconv.ParseInt(p.String(), 10, 64)
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		u, err := strconv.ParseUint(s, 10, 64)
+		u, err := strconv.ParseUint(p.String(), 10, 64)
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetUint(u)
 	case reflect.Float32, reflect.Float64:
-		f, err := strconv.ParseFloat(s, 64)
+		f, err := strconv.ParseFloat(p.String(), 64)
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetFloat(f)
 	case reflect.String:
-		v.SetString(s)
-	default:
-		panic(nil)
+		v.SetString(p.String())
 	}
 }
 
 // decodeBytes decodes []byte value
-func decodeBytes(b []byte, v reflect.Value) {
+func decodeBytes(d *decodeState, p *Value, v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(b))
+		v.Set(reflect.ValueOf(p.Bytes()))
 	case reflect.Bool:
-		b, err := strconv.ParseBool(string(b))
+		b, err := strconv.ParseBool(string(p.Bytes()))
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(string(b), 10, 64)
+		i, err := strconv.ParseInt(string(p.Bytes()), 10, 64)
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		u, err := strconv.ParseUint(string(b), 10, 64)
+		u, err := strconv.ParseUint(string(p.Bytes()), 10, 64)
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetUint(u)
 	case reflect.Float32, reflect.Float64:
-		f, err := strconv.ParseFloat(string(b), 64)
+		f, err := strconv.ParseFloat(string(p.Bytes()), 64)
 		if err != nil {
-			panic(err)
+			d.addErrorContext(p, err)
+			break
 		}
 		v.SetFloat(f)
 	case reflect.String:
-		v.SetString(string(b))
-	default:
-		panic(nil)
+		v.SetString(string(p.Bytes()))
 	}
 }
 
 // decodeSlice decodes slice value
-func decodeSlice(l *Buffer, p *Value, v reflect.Value) {
+func decodeSlice(d *decodeState, p *Value, v reflect.Value) {
 	var arr []Value
 	if p.Length > 0 {
-		arr = l.buf[p.First : p.First+p.Length]
+		arr = d.buf[p.First : p.First+p.Length]
 	}
 	switch v.Kind() {
 	case reflect.Interface:
-		arr := arrayInterface(l, arr)
+		arr := arrayInterface(d, arr)
 		v.Set(reflect.ValueOf(arr))
 	default:
 		n := len(arr)
@@ -814,7 +815,7 @@ func decodeSlice(l *Buffer, p *Value, v reflect.Value) {
 		i := 0
 		for ; i < n; i++ {
 			if i < v.Len() {
-				decodeValue(l, &l.buf[p.First+i], v.Index(i))
+				decodeValue(d, &d.buf[p.First+i], v.Index(i))
 			}
 		}
 		if i < v.Len() {
@@ -831,15 +832,15 @@ func decodeSlice(l *Buffer, p *Value, v reflect.Value) {
 }
 
 // decodeMap decodes map value
-func decodeMap(l *Buffer, p *Value, v reflect.Value) {
+func decodeMap(d *decodeState, p *Value, v reflect.Value) {
 	t := v.Type()
 	switch v.Kind() {
 	case reflect.Interface:
 		var arr []Value
 		if p.Length > 0 {
-			arr = l.buf[p.First : p.First+p.Length]
+			arr = d.buf[p.First : p.First+p.Length]
 		}
-		oi := objectInterface(l, arr)
+		oi := objectInterface(d, arr)
 		v.Set(reflect.ValueOf(oi))
 	case reflect.Map:
 		if t.Key().Kind() != reflect.String {
@@ -848,26 +849,26 @@ func decodeMap(l *Buffer, p *Value, v reflect.Value) {
 		if v.IsNil() {
 			v.Set(reflect.MakeMap(t))
 		}
-		decodeMapToMap(l, p, v, t)
+		decodeMapToMap(d, p, v, t)
 	case reflect.Struct:
-		decodeMapToStruct(l, p, v, t)
+		decodeMapToStruct(d, p, v, t)
 	}
 }
 
-func decodeMapToMap(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
+func decodeMapToMap(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 	elemType := t.Elem()
 	for i := 0; i < p.Length; i++ {
 		elemValue := reflect.New(elemType).Elem()
-		decodeValue(l, &l.buf[p.First+i], elemValue)
+		decodeValue(d, &d.buf[p.First+i], elemValue)
 		keyValue := reflect.ValueOf(p.Name)
 		v.SetMapIndex(keyValue, elemValue)
 	}
 }
 
-func decodeMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
+func decodeMapToStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 	fields := cachedTypeFields(t)
 	for i := 0; i < p.Length; i++ {
-		e := &l.buf[p.First+i]
+		e := &d.buf[p.First+i]
 		f, ok := fields.byExactName[e.Name]
 		if !ok {
 			continue
@@ -886,7 +887,7 @@ func decodeMapToStruct(l *Buffer, p *Value, v reflect.Value, t reflect.Type) {
 			}
 			subValue = subValue.Field(j)
 		}
-		decodeValue(l, e, subValue)
+		decodeValue(d, e, subValue)
 	}
 }
 

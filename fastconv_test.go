@@ -15,8 +15,10 @@ func equalValues(got, expect []Value) bool {
 	var expectValue interface{}
 	gotBuffer := &Buffer{buf: got}
 	expectBuffer := &Buffer{buf: expect}
-	decodeValue(gotBuffer, &gotBuffer.buf[0], reflect.ValueOf(&gotValue))
-	decodeValue(expectBuffer, &expectBuffer.buf[0], reflect.ValueOf(&expectValue))
+	d1 := &decodeState{Buffer: gotBuffer}
+	decodeValue(d1, &d1.buf[0], reflect.ValueOf(&gotValue))
+	d2 := &decodeState{Buffer: expectBuffer}
+	decodeValue(d2, &d2.buf[0], reflect.ValueOf(&expectValue))
 	return reflect.DeepEqual(gotValue, expectValue)
 }
 
