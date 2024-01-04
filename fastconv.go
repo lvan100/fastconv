@@ -29,20 +29,25 @@ import (
 )
 
 func Convert(src, dest any) error {
+
 	srcValue := reflect.ValueOf(src)
 	if !srcValue.IsValid() || srcValue.IsNil() {
 		return nil
 	}
+
 	destValue := reflect.ValueOf(dest)
 	if destValue.Kind() != reflect.Ptr || destValue.IsNil() {
 		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(destValue)}
 	}
+
 	l := newBuffer()
 	defer bufferPool.Put(l)
-	l.Append(1)
-	c := &l.buf[0]
+
+	e := &encodeState{Buffer: l}
+	e.Append(1)
+	c := &e.buf[0]
 	c.Parent = -1
-	encodeValue(l, 0, c, srcValue)
+	encodeValue(e, 0, c, srcValue)
 
 	//fmt.Println("----------------")
 	//n := len(l.buf)
@@ -199,14 +204,18 @@ func newBuffer() *Buffer {
 	}
 }
 
+type encodeState struct {
+	*Buffer
+}
+
 // encodeValue encodes v to p [*Value] which stored in l [*Buffer].
-func encodeValue(l *Buffer, current int, p *Value, v reflect.Value) {
+func encodeValue(e *encodeState, current int, p *Value, v reflect.Value) {
 	if v.IsValid() {
-		cachedTypeEncoder(v.Type())(l, current, p, v)
+		cachedTypeEncoder(v.Type())(e, current, p, v)
 	}
 }
 
-type encoderFunc func(l *Buffer, current int, p *Value, v reflect.Value)
+type encoderFunc func(e *encodeState, current int, p *Value, v reflect.Value)
 
 var (
 	fastEncoders []encoderFunc
@@ -293,9 +302,9 @@ func cachedTypeEncoder(t reflect.Type) encoderFunc {
 		f  encoderFunc
 	)
 	wg.Add(1)
-	fi, loaded := encoderCache.LoadOrStore(t, encoderFunc(func(l *Buffer, current int, p *Value, v reflect.Value) {
+	fi, loaded := encoderCache.LoadOrStore(t, encoderFunc(func(e *encodeState, current int, p *Value, v reflect.Value) {
 		wg.Wait()
-		f(l, current, p, v)
+		f(e, current, p, v)
 	}))
 	if loaded {
 		return fi.(encoderFunc)
@@ -320,36 +329,36 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Struct:
 		return newStructEncoder(t)
 	default:
-		return func(l *Buffer, current int, p *Value, v reflect.Value) {}
+		return func(e *encodeState, current int, p *Value, v reflect.Value) {}
 	}
 }
 
 // boolEncoder is the encoderFunc of bool.
-func boolEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func boolEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	p.Type = Bool
 	p.SetBool(v.Bool())
 }
 
 // intEncoder is the encoderFunc of int, int8, int16, int32 and int64.
-func intEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func intEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	p.Type = Int
 	p.SetInt(v.Int())
 }
 
 // uintEncoder is the encoderFunc of uint, uint8, uint16, uint32 and uint64.
-func uintEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func uintEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	p.Type = Uint
 	p.SetUint(v.Uint())
 }
 
 // floatEncoder is the encoderFunc of float32 and float64.
-func floatEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func floatEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	p.Type = Float
 	p.SetFloat(v.Float())
 }
 
 // stringEncoder is the encoderFunc of string.
-func stringEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func stringEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	p.Type = String
 	old := p.Parent
 	p.SetString(v.String())
@@ -359,16 +368,16 @@ func stringEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 }
 
 // interfaceEncoder is the encoderFunc of interface{}.
-func interfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func interfaceEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	if v.IsNil() {
 		p.Type = Nil
 		return
 	}
-	encodeValue(l, current, p, v.Elem())
+	encodeValue(e, current, p, v.Elem())
 }
 
 // sliceByteEncoder is the encoderFunc of []byte.
-func sliceByteEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func sliceByteEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	p.Type = Bytes
 	old := p.Parent
 	p.SetBytes(v.Interface().([]byte))
@@ -378,7 +387,7 @@ func sliceByteEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 }
 
 // sliceInterfaceEncoder is the encoderFunc of []interface{}.
-func sliceInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func sliceInterfaceEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	s := v.Interface().([]interface{})
 	n := len(s)
 	p.Type = Slice
@@ -386,22 +395,22 @@ func sliceInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(l.buf)
+	end := len(e.buf)
 	p.First = end
-	l.Append(n)
+	e.Append(n)
 	for i, sValue := range s {
 		if sValue == nil {
-			l.buf[end+i] = Value{Type: Nil, Parent: current}
+			e.buf[end+i] = Value{Type: Nil, Parent: current}
 		} else {
-			c := &l.buf[end+i]
+			c := &e.buf[end+i]
 			c.Parent = current
-			encodeValue(l, end+i, c, reflect.ValueOf(sValue))
+			encodeValue(e, end+i, c, reflect.ValueOf(sValue))
 		}
 	}
 }
 
 // mapStringInterfaceEncoder is the encoderFunc of map[string]interface{}.
-func mapStringInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value) {
+func mapStringInterfaceEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	m := v.Interface().(map[string]interface{})
 	n := len(m)
 	p.Type = Map
@@ -409,19 +418,19 @@ func mapStringInterfaceEncoder(l *Buffer, current int, p *Value, v reflect.Value
 		return
 	}
 	p.Length = n
-	end := len(l.buf)
+	end := len(e.buf)
 	p.First = end
-	l.Append(n)
+	e.Append(n)
 	i := 0
 	for mKey, mValue := range m { // no need to sort keys
 		if mValue == nil {
-			l.buf[end+i] = Value{Type: Nil, Parent: current}
+			e.buf[end+i] = Value{Type: Nil, Name: mKey, Parent: current}
 		} else {
-			c := &l.buf[end+i]
+			c := &e.buf[end+i]
+			c.Name = mKey
 			c.Parent = current
-			encodeValue(l, end+i, c, reflect.ValueOf(mValue))
+			encodeValue(e, end+i, c, reflect.ValueOf(mValue))
 		}
-		l.buf[end+i].Name = mKey
 		i++
 	}
 }
@@ -436,12 +445,12 @@ func newPtrEncoder(t reflect.Type) encoderFunc {
 	return e.encode
 }
 
-func (e ptrEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
+func (pe ptrEncoder) encode(e *encodeState, current int, p *Value, v reflect.Value) {
 	if v.IsNil() {
 		p.Type = Nil
 		return
 	}
-	e.elemEnc(l, current, p, v.Elem())
+	pe.elemEnc(e, current, p, v.Elem())
 }
 
 // arrayEncoder is the encoderFunc of array and slice.
@@ -454,20 +463,20 @@ func newArrayEncoder(t reflect.Type) encoderFunc {
 	return e.encode
 }
 
-func (e arrayEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
+func (ae arrayEncoder) encode(e *encodeState, current int, p *Value, v reflect.Value) {
 	n := v.Len()
 	p.Type = Slice
 	if n == 0 {
 		return
 	}
 	p.Length = n
-	end := len(l.buf)
+	end := len(e.buf)
 	p.First = end
-	l.Append(n)
+	e.Append(n)
 	for i := 0; i < n; i++ {
-		c := &l.buf[end+i]
+		c := &e.buf[end+i]
 		c.Parent = current
-		e.elemEnc(l, end+i, c, v.Index(i))
+		ae.elemEnc(e, end+i, c, v.Index(i))
 	}
 }
 
@@ -488,16 +497,16 @@ func validMapKey(key reflect.Value) (string, bool) {
 	return key.String(), true
 }
 
-func (e mapEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
+func (me mapEncoder) encode(e *encodeState, current int, p *Value, v reflect.Value) {
 	n := v.Len()
 	p.Type = Map
 	if n == 0 {
 		return
 	}
 	p.Length = n
-	end := len(l.buf)
+	end := len(e.buf)
 	p.First = end
-	l.Append(n)
+	e.Append(n)
 	i := 0
 	iter := v.MapRange()
 	for iter.Next() { // no need to sort keys
@@ -505,10 +514,10 @@ func (e mapEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
 		if !valid {
 			continue
 		}
-		c := &l.buf[end+i]
+		c := &e.buf[end+i]
 		c.Name = name
 		c.Parent = current
-		e.elemEnc(l, end+i, c, iter.Value())
+		me.elemEnc(e, end+i, c, iter.Value())
 		i++
 	}
 }
@@ -523,18 +532,18 @@ func newStructEncoder(t reflect.Type) encoderFunc {
 	return e.encode
 }
 
-func (e structEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value) {
-	n := len(e.fields.list)
+func (se structEncoder) encode(e *encodeState, current int, p *Value, v reflect.Value) {
+	n := len(se.fields.list)
 	p.Type = Map
 	if n == 0 {
 		return
 	}
 	p.Length = n
-	end := len(l.buf)
+	end := len(e.buf)
 	p.First = end
-	l.Append(n)
-	for j := range e.fields.list {
-		f := &e.fields.list[j]
+	e.Append(n)
+	for j := range se.fields.list {
+		f := &se.fields.list[j]
 		fv := v
 		breakNil := false
 		for _, i := range f.index {
@@ -548,13 +557,13 @@ func (e structEncoder) encode(l *Buffer, current int, p *Value, v reflect.Value)
 			fv = fv.Field(i)
 		}
 		if breakNil {
-			l.buf[end+j] = Value{Type: Nil, Name: f.name, Parent: current}
+			e.buf[end+j] = Value{Type: Nil, Name: f.name, Parent: current}
 			continue
 		}
-		c := &l.buf[end+j]
+		c := &e.buf[end+j]
 		c.Name = f.name
 		c.Parent = current
-		f.encoder(l, end+j, c, fv)
+		f.encoder(e, end+j, c, fv)
 	}
 }
 

@@ -165,11 +165,15 @@ func Test_encodeValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			v := reflect.ValueOf(tt.args.value)
+
 			l := &Buffer{}
-			l.Append(1)
-			encodeValue(l, 0, &l.buf[0], v)
+			e := &encodeState{Buffer: l}
+			e.Append(1)
+			c := &e.buf[0]
+			c.Parent = -1
+			encodeValue(e, 0, c, v)
+
 			expectBuf := tt.args.buffer()
 			if !equalValues(l.buf, expectBuf) {
 				t.Errorf("got (%T) %v but expect (%T) %v", l.buf, l.buf, expectBuf, expectBuf)
