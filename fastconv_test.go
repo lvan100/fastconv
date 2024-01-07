@@ -1,65 +1,14 @@
 package fastconv
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"runtime"
-	"sort"
 	"strings"
 	"testing"
 	"time"
-	"unsafe"
 )
-
-func equalValues(got, expect []Value) bool {
-	if len(got) != len(expect) {
-		return false
-	}
-	// 对 Map 按照 Name 排序
-	for _, a := range got {
-		if a.Type == Map && a.Length > 1 {
-			sort.Slice(got[a.First:a.First+a.Length], func(i, j int) bool {
-				return got[a.First+i].Name > got[a.First+j].Name
-			})
-		}
-	}
-	// 对 Map 按照 Name 排序
-	for _, b := range expect {
-		if b.Type == Map && b.Length > 1 {
-			sort.Slice(expect[b.First:b.First+b.Length], func(i, j int) bool {
-				return expect[b.First+i].Name > expect[b.First+j].Name
-			})
-		}
-	}
-	for i := 0; i < len(got); i++ {
-		a := got[i]
-		b := expect[i]
-		if a.Type != b.Type || a.Name != b.Name || a.Parent != b.Parent {
-			return false
-		}
-		switch a.Type {
-		case Nil, Bool, Int, Uint, Float, Slice, Map:
-			if a.Data != b.Data || a.Length != b.Length || a.First != b.First {
-				return false
-			}
-		case String:
-			s1 := *(*string)(unsafe.Pointer(&a.Data))
-			s2 := *(*string)(unsafe.Pointer(&b.Data))
-			if strings.Compare(s1, s2) != 0 || a.First != b.First {
-				return false
-			}
-		case Bytes:
-			s1 := *(*[]byte)(unsafe.Pointer(&a.Data))
-			s2 := *(*[]byte)(unsafe.Pointer(&b.Data))
-			if bytes.Compare(s1, s2) != 0 {
-				return false
-			}
-		}
-	}
-	return true
-}
 
 func Test_encodeValue(t *testing.T) {
 	type args struct {
@@ -204,18 +153,17 @@ func Test_encodeValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := reflect.ValueOf(tt.args.value)
 
 			l := &Buffer{}
-			e := &encodeState{Buffer: l}
-			e.Append(1)
-			c := &e.buf[0]
-			c.Parent = -1
-			encodeValue(e, 0, c, v)
+			if err := Encode(l, tt.args.value); err != nil {
+				t.Error(err)
+				return
+			}
 
 			expectBuf := tt.args.buffer()
-			if !equalValues(l.buf, expectBuf) {
+			if !EqualBuffer(l, &Buffer{buf: expectBuf}) {
 				t.Errorf("got (%T) %v but expect (%T) %v", l.buf, l.buf, expectBuf, expectBuf)
+				return
 			}
 
 			encoder := make(map[reflect.Type]string)
@@ -228,6 +176,7 @@ func Test_encodeValue(t *testing.T) {
 			expectEncoder := tt.args.encoder
 			if !reflect.DeepEqual(encoder, expectEncoder) {
 				t.Errorf("got (%T) %v but expect (%T) %v", encoder, encoder, expectEncoder, expectEncoder)
+				return
 			}
 		})
 	}
