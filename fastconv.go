@@ -18,6 +18,7 @@ package fastconv
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -73,7 +74,8 @@ func Convert(src, dest any) error {
 type Kind int
 
 const (
-	Nil = Kind(iota)
+	Invalid = Kind(iota)
+	Nil
 	Bool
 	Int
 	Uint
@@ -91,7 +93,7 @@ const (
 type Value struct {
 	Type   Kind
 	Name   string
-	Data   [8]byte
+	Data   uintptr
 	Length int // number of children
 	First  int // position of first
 	Parent int // position of parent
@@ -206,6 +208,11 @@ func newBuffer() *Buffer {
 
 type encodeState struct {
 	*Buffer
+	savedError error
+}
+
+func (e *encodeState) addErrorContext(p *Value, err error) {
+
 }
 
 // encodeValue encodes v to p [*Value] which stored in l [*Buffer].
@@ -490,11 +497,17 @@ func newMapEncoder(t reflect.Type) encoderFunc {
 	return e.encode
 }
 
-func validMapKey(key reflect.Value) (string, bool) {
-	if key.Kind() != reflect.String {
-		return "", false
+func validMapKey(k reflect.Value) (string, bool) {
+	switch k.Kind() {
+	case reflect.String:
+		return k.String(), true
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(k.Int(), 10), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(k.Uint(), 10), true
+	default:
+		return fmt.Sprint(k.Interface()), false
 	}
-	return key.String(), true
 }
 
 func (me mapEncoder) encode(e *encodeState, current int, p *Value, v reflect.Value) {
@@ -510,13 +523,15 @@ func (me mapEncoder) encode(e *encodeState, current int, p *Value, v reflect.Val
 	i := 0
 	iter := v.MapRange()
 	for iter.Next() { // no need to sort keys
-		name, valid := validMapKey(iter.Key())
+		var valid bool
+		c := &e.buf[end+i]
+		c.Parent = current
+		c.Name, valid = validMapKey(iter.Key())
 		if !valid {
+			e.addErrorContext(c, errors.New("invalid map key"))
+			i++
 			continue
 		}
-		c := &e.buf[end+i]
-		c.Name = name
-		c.Parent = current
 		me.elemEnc(e, end+i, c, iter.Value())
 		i++
 	}
@@ -573,6 +588,7 @@ var decoders []decoderFunc
 
 func init() {
 	decoders = []decoderFunc{
+		nil,          //Invalid
 		nil,          // Nil
 		decodeBool,   // Bool
 		decodeInt,    // Int
@@ -858,23 +874,18 @@ func decodeMap(d *decodeState, p *Value, v reflect.Value) {
 		if v.IsNil() {
 			v.Set(reflect.MakeMap(t))
 		}
-		decodeMapToMap(d, p, v, t)
+		et := t.Elem()
+		for i := 0; i < p.Length; i++ {
+			ev := reflect.New(et).Elem()
+			decodeValue(d, &d.buf[p.First+i], ev)
+			v.SetMapIndex(reflect.ValueOf(p.Name), ev)
+		}
 	case reflect.Struct:
-		decodeMapToStruct(d, p, v, t)
+		decodeStruct(d, p, v, t)
 	}
 }
 
-func decodeMapToMap(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
-	elemType := t.Elem()
-	for i := 0; i < p.Length; i++ {
-		elemValue := reflect.New(elemType).Elem()
-		decodeValue(d, &d.buf[p.First+i], elemValue)
-		keyValue := reflect.ValueOf(p.Name)
-		v.SetMapIndex(keyValue, elemValue)
-	}
-}
-
-func decodeMapToStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
+func decodeStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 	fields := cachedTypeFields(t)
 	for i := 0; i < p.Length; i++ {
 		e := &d.buf[p.First+i]

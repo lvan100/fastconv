@@ -1,25 +1,64 @@
 package fastconv
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 func equalValues(got, expect []Value) bool {
-	var gotValue interface{}
-	var expectValue interface{}
-	gotBuffer := &Buffer{buf: got}
-	expectBuffer := &Buffer{buf: expect}
-	d1 := &decodeState{Buffer: gotBuffer}
-	decodeValue(d1, &d1.buf[0], reflect.ValueOf(&gotValue))
-	d2 := &decodeState{Buffer: expectBuffer}
-	decodeValue(d2, &d2.buf[0], reflect.ValueOf(&expectValue))
-	return reflect.DeepEqual(gotValue, expectValue)
+	if len(got) != len(expect) {
+		return false
+	}
+	// 对 Map 按照 Name 排序
+	for _, a := range got {
+		if a.Type == Map && a.Length > 1 {
+			sort.Slice(got[a.First:a.First+a.Length], func(i, j int) bool {
+				return got[a.First+i].Name > got[a.First+j].Name
+			})
+		}
+	}
+	// 对 Map 按照 Name 排序
+	for _, b := range expect {
+		if b.Type == Map && b.Length > 1 {
+			sort.Slice(expect[b.First:b.First+b.Length], func(i, j int) bool {
+				return expect[b.First+i].Name > expect[b.First+j].Name
+			})
+		}
+	}
+	for i := 0; i < len(got); i++ {
+		a := got[i]
+		b := expect[i]
+		if a.Type != b.Type || a.Name != b.Name || a.Parent != b.Parent {
+			return false
+		}
+		switch a.Type {
+		case Nil, Bool, Int, Uint, Float, Slice, Map:
+			if a.Data != b.Data || a.Length != b.Length || a.First != b.First {
+				return false
+			}
+		case String:
+			s1 := *(*string)(unsafe.Pointer(&a.Data))
+			s2 := *(*string)(unsafe.Pointer(&b.Data))
+			if strings.Compare(s1, s2) != 0 || a.First != b.First {
+				return false
+			}
+		case Bytes:
+			s1 := *(*[]byte)(unsafe.Pointer(&a.Data))
+			s2 := *(*[]byte)(unsafe.Pointer(&b.Data))
+			if bytes.Compare(s1, s2) != 0 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func Test_encodeValue(t *testing.T) {
