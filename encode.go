@@ -201,16 +201,6 @@ func interfaceEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	encodeValue(e, current, p, v.Elem())
 }
 
-// sliceByteEncoder is the encoderFunc of []byte.
-func sliceByteEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
-	p.Type = Bytes
-	old := p.Parent
-	p.SetBytes(v.Interface().([]byte))
-	if p.Parent != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
-	}
-}
-
 // sliceInterfaceEncoder is the encoderFunc of []interface{}.
 func sliceInterfaceEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
 	s := v.Interface().([]interface{})
@@ -283,8 +273,172 @@ type arrayEncoder struct {
 	elemEnc encoderFunc
 }
 
+var fastSliceEncoders []encoderFunc
+
+func init() {
+	fastSliceEncoders = []encoderFunc{
+		nil,             // Invalid
+		boolsEncoder,    // Bool
+		intsEncoder,     // Int
+		int8sEncoder,    // Int8
+		int16sEncoder,   // Int16
+		int32sEncoder,   // Int32
+		int64sEncoder,   // Int64
+		uintsEncoder,    // Uint
+		uint8sEncoder,   // Uint8
+		uint16sEncoder,  // Uint16
+		uint32sEncoder,  // Uint32
+		uint64sEncoder,  // Uint64
+		nil,             // Uintptr
+		float32sEncoder, // Float32
+		float64sEncoder, // Float64
+		nil,             // Complex64
+		nil,             // Complex128
+		nil,             // Array
+		nil,             // Chan
+		nil,             // Func
+		nil,             // Interface
+		nil,             // Map
+		nil,             // Pointer
+		nil,             // Slice
+		stringsEncoder,  // String
+		nil,             // Struct
+		nil,             // UnsafePointer
+	}
+}
+
+func boolsEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Bools
+	old := p.Parent
+	p.SetBools(v.Interface().([]bool))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func intsEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Ints
+	old := p.Parent
+	p.SetInts(v.Interface().([]int))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func int8sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Int8s
+	old := p.Parent
+	p.SetInt8s(v.Interface().([]int8))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func int16sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Int16s
+	old := p.Parent
+	p.SetInt16s(v.Interface().([]int16))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func int32sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Int32s
+	old := p.Parent
+	p.SetInt32s(v.Interface().([]int32))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func int64sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Int64s
+	old := p.Parent
+	p.SetInt64s(v.Interface().([]int64))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func uintsEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Uints
+	old := p.Parent
+	p.SetUints(v.Interface().([]uint))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func uint8sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Uint8s
+	old := p.Parent
+	p.SetUint8s(v.Interface().([]uint8))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func uint16sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Uint16s
+	old := p.Parent
+	p.SetUint16s(v.Interface().([]uint16))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func uint32sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Uint32s
+	old := p.Parent
+	p.SetUint32s(v.Interface().([]uint32))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func uint64sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Uint64s
+	old := p.Parent
+	p.SetUint64s(v.Interface().([]uint64))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func float32sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Float32s
+	old := p.Parent
+	p.SetFloat32s(v.Interface().([]float32))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func float64sEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Float64s
+	old := p.Parent
+	p.SetFloat64s(v.Interface().([]float64))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
+func stringsEncoder(e *encodeState, current int, p *Value, v reflect.Value) {
+	p.Type = Strings
+	old := p.Parent
+	p.SetStrings(v.Interface().([]string))
+	if p.Parent != old { // should never happen
+		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+	}
+}
+
 func newArrayEncoder(t reflect.Type) encoderFunc {
-	e := arrayEncoder{cachedTypeEncoder(t.Elem())}
+	et := t.Elem()
+	if f := fastSliceEncoders[et.Kind()]; f != nil {
+		return f
+	}
+	e := arrayEncoder{cachedTypeEncoder(et)}
 	return e.encode
 }
 

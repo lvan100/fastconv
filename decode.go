@@ -22,16 +22,29 @@ var decoders []decoderFunc
 
 func init() {
 	decoders = []decoderFunc{
-		nil,          //Invalid
-		nil,          // Nil
-		decodeBool,   // Bool
-		decodeInt,    // Int
-		decodeUint,   // Uint
-		decodeFloat,  // Float
-		decodeString, // String
-		decodeBytes,  // Bytes
-		decodeSlice,  // Slice
-		decodeMap,    // Map
+		nil,            // Invalid
+		nil,            // Nil
+		decodeBool,     // Bool
+		decodeInt,      // Int
+		decodeUint,     // Uint
+		decodeFloat,    // Float
+		decodeString,   // String
+		decodeBools,    // Bools
+		decodeInts,     // Ints
+		decodeInt8s,    // Int8s
+		decodeInt16s,   // Int16s
+		decodeInt32s,   // Int32s
+		decodeInt64s,   // Int64s
+		decodeUints,    // Uints
+		decodeUint8s,   // Uint8s
+		decodeUint16s,  // Uint16s
+		decodeUint32s,  // Uint32s
+		decodeUint64s,  // Uint64s
+		decodeFloat32s, // Float32s
+		decodeFloat64s, // Float64s
+		decodeStrings,  // Strings
+		decodeSlice,    // Slice
+		decodeMap,      // Map
 	}
 }
 
@@ -66,8 +79,34 @@ func valueInterface(d *decodeState, p *Value) interface{} {
 		return p.Float()
 	case String:
 		return p.String()
-	case Bytes:
-		return p.Bytes()
+	case Bools:
+		return p.Bools()
+	case Ints:
+		return p.Ints()
+	case Int8s:
+		return p.Int8s()
+	case Int16s:
+		return p.Int16s()
+	case Int32s:
+		return p.Int32s()
+	case Int64s:
+		return p.Int64s()
+	case Uints:
+		return p.Uints()
+	case Uint8s:
+		return p.Uint8s()
+	case Uint16s:
+		return p.Uint16s()
+	case Uint32s:
+		return p.Uint32s()
+	case Uint64s:
+		return p.Uint64s()
+	case Float32s:
+		return p.Float32s()
+	case Float64s:
+		return p.Float64s()
+	case Strings:
+		return p.Strings()
 	case Slice:
 		arr := d.buf[p.First : p.First+p.Length]
 		return arrayInterface(d, arr)
@@ -218,42 +257,74 @@ func decodeString(d *decodeState, p *Value, v reflect.Value) {
 	}
 }
 
-// decodeBytes decodes []byte value
-func decodeBytes(d *decodeState, p *Value, v reflect.Value) {
-	switch v.Kind() {
-	case reflect.Interface:
-		v.Set(reflect.ValueOf(p.Bytes()))
-	case reflect.Bool:
-		b, err := strconv.ParseBool(string(p.Bytes()))
-		if err != nil {
-			d.addErrorContext(p, err)
-			break
-		}
-		v.SetBool(b)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(string(p.Bytes()), 10, 64)
-		if err != nil {
-			d.addErrorContext(p, err)
-			break
-		}
-		v.SetInt(i)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		u, err := strconv.ParseUint(string(p.Bytes()), 10, 64)
-		if err != nil {
-			d.addErrorContext(p, err)
-			break
-		}
-		v.SetUint(u)
-	case reflect.Float32, reflect.Float64:
-		f, err := strconv.ParseFloat(string(p.Bytes()), 64)
-		if err != nil {
-			d.addErrorContext(p, err)
-			break
-		}
-		v.SetFloat(f)
-	case reflect.String:
-		v.SetString(string(p.Bytes()))
-	}
+// decodeBools decodes []bool value
+func decodeBools(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeInts decodes []int value
+func decodeInts(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeInt8s decodes []int8 value
+func decodeInt8s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeInt16s decodes []int16 value
+func decodeInt16s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeInt32s decodes []int32 value
+func decodeInt32s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeInt64s decodes []int64 value
+func decodeInt64s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeUints decodes []uint value
+func decodeUints(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeUint8s decodes []uint8 value
+func decodeUint8s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeUint16s decodes []uint16 value
+func decodeUint16s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeUint32s decodes []uint32 value
+func decodeUint32s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeUint64s decodes []uint64 value
+func decodeUint64s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeFloat32s decodes []float32 value
+func decodeFloat32s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeFloat64s decodes []float64 value
+func decodeFloat64s(d *decodeState, p *Value, v reflect.Value) {
+
+}
+
+// decodeStrings decodes []string value
+func decodeStrings(d *decodeState, p *Value, v reflect.Value) {
+
 }
 
 // decodeSlice decodes slice value
