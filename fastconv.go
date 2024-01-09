@@ -16,11 +16,29 @@
 
 package fastconv
 
+// DeepCopy returns a "deep" copy of v.
+func DeepCopy[T any](v T) (T, error) {
+	l := GetBuffer()
+	defer PutBuffer(l)
+	var r T
+	if err := Encode(l, v); err != nil {
+		return r, err
+	}
+	if err := Decode(l, &r); err != nil {
+		return r, err
+	}
+	return r, nil
+}
+
+// Convert converts src to dest by "deep" copy.
 func Convert(src, dest any) error {
 	l := GetBuffer()
 	defer PutBuffer(l)
 	if err := Encode(l, src); err != nil {
 		return err
 	}
-	return Decode(l, dest)
+	if err := Decode(l, dest); err != nil {
+		return err
+	}
+	return nil
 }

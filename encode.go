@@ -1,7 +1,6 @@
 package fastconv
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -12,25 +11,28 @@ import (
 )
 
 func Encode(l *Buffer, v interface{}) error {
+
 	rv := reflect.ValueOf(v)
 	if !rv.IsValid() || rv.IsNil() {
 		return nil
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
+
 	e := &encodeState{Buffer: l}
 	e.Append(1)
 	c := &e.buf[0]
 	c.Parent = -1
 	encodeValue(e, 0, c, rv)
-	return e.savedError
+	return nil
 }
 
 type encodeState struct {
 	*Buffer
-	savedError error
-}
-
-func (e *encodeState) addErrorContext(p *Value, err error) {
-
 }
 
 // encodeValue encodes v to p [*Value] which stored in l [*Buffer].
@@ -154,7 +156,9 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Struct:
 		return newStructEncoder(t)
 	default:
-		return func(e *encodeState, current int, p *Value, v reflect.Value) {}
+		return func(e *encodeState, current int, p *Value, v reflect.Value) {
+			panic(fmt.Errorf("unsupported type %s", v.Type()))
+		}
 	}
 }
 
@@ -500,9 +504,7 @@ func (me mapEncoder) encode(e *encodeState, current int, p *Value, v reflect.Val
 		c.Parent = current
 		c.Name, valid = validMapKey(iter.Key())
 		if !valid {
-			e.addErrorContext(c, errors.New("invalid map key"))
-			i++
-			continue
+			panic(fmt.Errorf("invalid map key %s[%s]", c.Name, iter.Key().Type()))
 		}
 		me.elemEnc(e, end+i, c, iter.Value())
 		i++
@@ -554,8 +556,6 @@ func (se structEncoder) encode(e *encodeState, current int, p *Value, v reflect.
 	}
 }
 
-// parseTag splits a struct field's json tag into its name and
-// comma-separated options.
 func parseTag(tag string) string {
 	tag, _, _ = strings.Cut(tag, ",")
 	return tag

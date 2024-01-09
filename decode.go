@@ -2,18 +2,27 @@ package fastconv
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 )
 
 func Decode(l *Buffer, v interface{}) error {
+
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(v)}
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
+
 	d := &decodeState{Buffer: l}
 	decodeValue(d, &d.buf[0], rv)
-	return d.savedError
+	return nil
 }
 
 type decoderFunc func(d *decodeState, p *Value, v reflect.Value)
@@ -50,11 +59,6 @@ func init() {
 
 type decodeState struct {
 	*Buffer
-	savedError error
-}
-
-func (d *decodeState) addErrorContext(p *Value, err error) {
-
 }
 
 // decodeValue decodes the value stored in p [*Value] into v [reflect.Value].
@@ -62,6 +66,17 @@ func decodeValue(d *decodeState, p *Value, v reflect.Value) {
 	if f := decoders[p.Type]; f != nil {
 		f(d, p, makeValue(v))
 	}
+}
+
+type Number interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
+}
+
+// dupSlice duplicates a slice.
+func dupSlice[T bool | Number | string](v []T) []T {
+	r := make([]T, len(v))
+	copy(r, v)
+	return r
 }
 
 // valueInterface returns p's underlying value as [interface{}].
@@ -80,41 +95,42 @@ func valueInterface(d *decodeState, p *Value) interface{} {
 	case String:
 		return p.String()
 	case Bools:
-		return p.Bools()
+		return dupSlice(p.Bools())
 	case Ints:
-		return p.Ints()
+		return dupSlice(p.Ints())
 	case Int8s:
-		return p.Int8s()
+		return dupSlice(p.Int8s())
 	case Int16s:
-		return p.Int16s()
+		return dupSlice(p.Int16s())
 	case Int32s:
-		return p.Int32s()
+		return dupSlice(p.Int32s())
 	case Int64s:
-		return p.Int64s()
+		return dupSlice(p.Int64s())
 	case Uints:
-		return p.Uints()
+		return dupSlice(p.Uints())
 	case Uint8s:
-		return p.Uint8s()
+		return dupSlice(p.Uint8s())
 	case Uint16s:
-		return p.Uint16s()
+		return dupSlice(p.Uint16s())
 	case Uint32s:
-		return p.Uint32s()
+		return dupSlice(p.Uint32s())
 	case Uint64s:
-		return p.Uint64s()
+		return dupSlice(p.Uint64s())
 	case Float32s:
-		return p.Float32s()
+		return dupSlice(p.Float32s())
 	case Float64s:
-		return p.Float64s()
+		return dupSlice(p.Float64s())
 	case Strings:
-		return p.Strings()
+		return dupSlice(p.Strings())
 	case Slice:
 		arr := d.buf[p.First : p.First+p.Length]
 		return arrayInterface(d, arr)
 	case Map:
 		arr := d.buf[p.First : p.First+p.Length]
 		return objectInterface(d, arr)
+	default:
+		panic(fmt.Errorf("unexpected kind %v", p.Type))
 	}
-	return nil
 }
 
 // arrayInterface returns p's underlying value as [[]interface{}].
@@ -227,29 +243,25 @@ func decodeString(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(p.String())
 		if err != nil {
-			d.addErrorContext(p, err)
-			break
+			panic(err)
 		}
 		v.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		i, err := strconv.ParseInt(p.String(), 10, 64)
 		if err != nil {
-			d.addErrorContext(p, err)
-			break
+			panic(err)
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		u, err := strconv.ParseUint(p.String(), 10, 64)
 		if err != nil {
-			d.addErrorContext(p, err)
-			break
+			panic(err)
 		}
 		v.SetUint(u)
 	case reflect.Float32, reflect.Float64:
 		f, err := strconv.ParseFloat(p.String(), 64)
 		if err != nil {
-			d.addErrorContext(p, err)
-			break
+			panic(err)
 		}
 		v.SetFloat(f)
 	case reflect.String:
