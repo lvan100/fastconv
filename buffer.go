@@ -2,9 +2,10 @@ package fastconv
 
 import (
 	"sort"
-	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/lvan100/fastconv/internal/slices"
 )
 
 // A Kind represents the type of value stored in Value.
@@ -39,14 +40,13 @@ const (
 // Value is used to store a value.
 // When the Type is Bool, Int, Uint, Float, only the Data field is used.
 // When the Type is String, the Data and Length fields are used.
-// When the Type is Bytes, the Data, Length, and First fields are used.
+// When the Type is [Type]s, the Data, Length, and First fields are used.
 type Value struct {
-	Type   Kind
-	Name   string
 	Data   uintptr
-	Length int // number of children
-	First  int // position of first
-	Parent int // position of parent
+	Length int  // number of children
+	First  int  // position of first
+	Type   Kind // to prevent overflow
+	Name   string
 }
 
 // Bool returns v's underlying value.
@@ -273,8 +273,10 @@ func (b *Buffer) grow(n int) {
 	}
 }
 
+// bufferPool pools the [Buffer]s.
 var bufferPool sync.Pool
 
+// GetBuffer gets a Buffer from the pool.
 func GetBuffer() *Buffer {
 	if v := bufferPool.Get(); v != nil {
 		e := v.(*Buffer)
@@ -286,24 +288,28 @@ func GetBuffer() *Buffer {
 	}
 }
 
+// PutBuffer returns a Buffer to the pool.
 func PutBuffer(l *Buffer) {
 	bufferPool.Put(l)
 }
 
+// EqualBuffer reports whether x and y are the same [Value]s.
 func EqualBuffer(x, y *Buffer) bool {
 	if len(x.buf) != len(y.buf) {
 		return false
 	}
-	prepareBuffer(x)
-	prepareBuffer(y)
+	sortMap(x)
+	sortMap(y)
 	return equalBuffer(x, y)
 }
 
-func prepareBuffer(x *Buffer) {
+func sortMap(x *Buffer) {
 	for _, a := range x.buf {
 		if a.Type == Map && a.Length > 1 {
-			sort.Slice(x.buf[a.First:a.First+a.Length], func(i, j int) bool {
-				return x.buf[a.First+i].Name > x.buf[a.First+j].Name
+			start := a.First
+			end := a.First + a.Length
+			sort.Slice(x.buf[start:end], func(i, j int) bool {
+				return x.buf[start+i].Name > x.buf[start+j].Name
 			})
 		}
 	}
@@ -311,9 +317,8 @@ func prepareBuffer(x *Buffer) {
 
 func equalBuffer(x, y *Buffer) bool {
 	for i := 0; i < len(x.buf); i++ {
-		a := x.buf[i]
-		b := y.buf[i]
-		if a.Type != b.Type || a.Name != b.Name || a.Parent != b.Parent {
+		a, b := x.buf[i], y.buf[i]
+		if a.Type != b.Type || a.Name != b.Name {
 			return false
 		}
 		switch a.Type {
@@ -322,17 +327,65 @@ func equalBuffer(x, y *Buffer) bool {
 				return false
 			}
 		case String:
-			s1 := *(*string)(unsafe.Pointer(&a.Data))
-			s2 := *(*string)(unsafe.Pointer(&b.Data))
-			if strings.Compare(s1, s2) != 0 || a.First != b.First {
+			if a.String() != b.String() || a.First != b.First {
 				return false
 			}
-			//case Bytes:
-			//	s1 := *(*[]byte)(unsafe.Pointer(&a.Data))
-			//	s2 := *(*[]byte)(unsafe.Pointer(&b.Data))
-			//	if bytes.Compare(s1, s2) != 0 {
-			//		return false
-			//	}
+		case Bools:
+			if !slices.Equal(a.Bools(), b.Bools()) {
+				return false
+			}
+		case Ints:
+			if !slices.Equal(a.Ints(), b.Ints()) {
+				return false
+			}
+		case Int8s:
+			if !slices.Equal(a.Int8s(), b.Int8s()) {
+				return false
+			}
+		case Int16s:
+			if !slices.Equal(a.Int16s(), b.Int16s()) {
+				return false
+			}
+		case Int32s:
+			if !slices.Equal(a.Int32s(), b.Int32s()) {
+				return false
+			}
+		case Int64s:
+			if !slices.Equal(a.Int64s(), b.Int64s()) {
+				return false
+			}
+		case Uints:
+			if !slices.Equal(a.Uints(), b.Uints()) {
+				return false
+			}
+		case Uint8s:
+			if !slices.Equal(a.Uint8s(), b.Uint8s()) {
+				return false
+			}
+		case Uint16s:
+			if !slices.Equal(a.Uint16s(), b.Uint16s()) {
+				return false
+			}
+		case Uint32s:
+			if !slices.Equal(a.Uint32s(), b.Uint32s()) {
+				return false
+			}
+		case Uint64s:
+			if !slices.Equal(a.Uint64s(), b.Uint64s()) {
+				return false
+			}
+		case Float32s:
+			if !slices.Equal(a.Float32s(), b.Float32s()) {
+				return false
+			}
+		case Float64s:
+			if !slices.Equal(a.Float64s(), b.Float64s()) {
+				return false
+			}
+		case Strings:
+			if !slices.Equal(a.Strings(), b.Strings()) {
+				return false
+			}
 		}
 	}
 	return true

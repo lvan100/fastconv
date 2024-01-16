@@ -1,28 +1,32 @@
 package fastconv
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 )
 
-func Decode(l *Buffer, v interface{}) error {
+func Decode(l *Buffer, v interface{}) (err error) {
 
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(v)}
+		return errors.New("")
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(r)
+			if ce, ok := r.(*convError); ok {
+				err = ce.error
+			} else {
+				panic(r)
+			}
 		}
 	}()
 
 	d := &decodeState{Buffer: l}
 	decodeValue(d, &d.buf[0], rv)
-	return nil
+	return
 }
 
 type decoderFunc func(d *decodeState, p *Value, v reflect.Value)
@@ -129,7 +133,7 @@ func valueInterface(d *decodeState, p *Value) interface{} {
 		arr := d.buf[p.First : p.First+p.Length]
 		return objectInterface(d, arr)
 	default:
-		panic(fmt.Errorf("unexpected kind %v", p.Type))
+		panic(&convError{fmt.Errorf("unexpected kind %v", p.Type)})
 	}
 }
 
@@ -243,25 +247,25 @@ func decodeString(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(p.String())
 		if err != nil {
-			panic(err)
+			panic(&convError{err})
 		}
 		v.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		i, err := strconv.ParseInt(p.String(), 10, 64)
 		if err != nil {
-			panic(err)
+			panic(&convError{err})
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		u, err := strconv.ParseUint(p.String(), 10, 64)
 		if err != nil {
-			panic(err)
+			panic(&convError{err})
 		}
 		v.SetUint(u)
 	case reflect.Float32, reflect.Float64:
 		f, err := strconv.ParseFloat(p.String(), 64)
 		if err != nil {
-			panic(err)
+			panic(&convError{err})
 		}
 		v.SetFloat(f)
 	case reflect.String:

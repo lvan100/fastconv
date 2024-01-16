@@ -16,6 +16,11 @@
 
 package fastconv
 
+// convError is an error wrapper type for internal use only.
+// Panics with errors are wrapped in convError so that the top-level
+// recover can distinguish intentional panics from this package.
+type convError struct{ error }
+
 // DeepCopy returns a "deep" copy of v.
 func DeepCopy[T any](v T) (T, error) {
 	l := GetBuffer()
