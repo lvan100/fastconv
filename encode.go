@@ -1,13 +1,13 @@
 package fastconv
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"unicode"
 )
 
 // Encode todo 补充注释
@@ -160,9 +160,7 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Struct:
 		return newStructEncoder(t)
 	default:
-		return func(e *encodeState, p *Value, v reflect.Value) {
-			panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
-		}
+		panic(&convError{fmt.Errorf("unsupported type %s", t)})
 	}
 }
 
@@ -196,7 +194,7 @@ func stringEncoder(e *encodeState, p *Value, v reflect.Value) {
 	old := p.Type
 	p.SetString(v.String())
 	if old != p.Type { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
@@ -313,129 +311,143 @@ func init() {
 	}
 }
 
+// boolsEncoder is the encoderFunc of type []bool.
 func boolsEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Bools
 	old := p.Type
 	p.SetBools(v.Interface().([]bool))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// boolsEncoder is the encoderFunc of type []int.
 func intsEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Ints
 	old := p.Type
 	p.SetInts(v.Interface().([]int))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// int8sEncoder is the encoderFunc of type []int8.
 func int8sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Int8s
 	old := p.Type
 	p.SetInt8s(v.Interface().([]int8))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// int16sEncoder is the encoderFunc of type []int16.
 func int16sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Int16s
 	old := p.Type
 	p.SetInt16s(v.Interface().([]int16))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// int32sEncoder is the encoderFunc of type []int32.
 func int32sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Int32s
 	old := p.Type
 	p.SetInt32s(v.Interface().([]int32))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// int64sEncoder is the encoderFunc of type []int64.
 func int64sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Int64s
 	old := p.Type
 	p.SetInt64s(v.Interface().([]int64))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// uintsEncoder is the encoderFunc of type []uint.
 func uintsEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Uints
 	old := p.Type
 	p.SetUints(v.Interface().([]uint))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// uint8sEncoder is the encoderFunc of type []uint8.
 func uint8sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Uint8s
 	old := p.Type
 	p.SetUint8s(v.Interface().([]uint8))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// uint16sEncoder is the encoderFunc of type []uint16.
 func uint16sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Uint16s
 	old := p.Type
 	p.SetUint16s(v.Interface().([]uint16))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// uint32sEncoder is the encoderFunc of type []uint32.
 func uint32sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Uint32s
 	old := p.Type
 	p.SetUint32s(v.Interface().([]uint32))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// uint64sEncoder is the encoderFunc of type []uin64.
 func uint64sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Uint64s
 	old := p.Type
 	p.SetUint64s(v.Interface().([]uint64))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// float32sEncoder is the encoderFunc of type []float32.
 func float32sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Float32s
 	old := p.Type
 	p.SetFloat32s(v.Interface().([]float32))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// float64sEncoder is the encoderFunc of type []float64.
 func float64sEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Float64s
 	old := p.Type
 	p.SetFloat64s(v.Interface().([]float64))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
+// stringsEncoder is the encoderFunc of type []string.
 func stringsEncoder(e *encodeState, p *Value, v reflect.Value) {
 	p.Type = Strings
 	old := p.Type
 	p.SetStrings(v.Interface().([]string))
 	if p.Type != old { // should never happen
-		panic(fmt.Errorf("!!! parent was unexpectedly modified"))
+		panic(errors.New("!!! Type was unexpectedly modified"))
 	}
 }
 
@@ -504,7 +516,7 @@ func (me mapEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 		c := &e.buf[end+i]
 		c.Name, valid = validMapKey(iter.Key())
 		if !valid {
-			panic(&convError{fmt.Errorf("invalid map key %s[%s]", c.Name, iter.Key().Type())})
+			panic(&convError{fmt.Errorf("invalid map key type %s", iter.Key().Type())})
 		}
 		me.elemEnc(e, c, iter.Value())
 		i++
@@ -553,28 +565,6 @@ func (se structEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 		c.Name = f.name
 		f.encoder(e, c, fv)
 	}
-}
-
-func parseTag(tag string) string {
-	tag, _, _ = strings.Cut(tag, ",")
-	return tag
-}
-
-func isValidTag(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, c := range s {
-		switch {
-		case strings.ContainsRune("!#$%&()*+-./:;<=>?@[]^_{|}~ ", c):
-			// Backslash and quote chars are reserved, but
-			// otherwise any punctuation chars are allowed
-			// in a tag name.
-		case !unicode.IsLetter(c) && !unicode.IsDigit(c):
-			return false
-		}
-	}
-	return true
 }
 
 // A structField represents a single field found in a struct.
@@ -668,10 +658,7 @@ func typeFields(t reflect.Type) structFields {
 				if tag == "-" {
 					continue
 				}
-				name := parseTag(tag)
-				if !isValidTag(name) {
-					name = ""
-				}
+				name, _, _ := strings.Cut(tag, ",")
 				index := make([]int, len(f.index)+1)
 				copy(index, f.index)
 				index[len(f.index)] = i
