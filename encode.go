@@ -644,7 +644,7 @@ func typeFields(t reflect.Type) structFields {
 					if st.Kind() == reflect.Pointer {
 						st = st.Elem()
 					}
-					if !sf.IsExported() && t.Kind() != reflect.Struct {
+					if !sf.IsExported() && st.Kind() != reflect.Struct {
 						// Ignore embedded fields of unexported non-struct types.
 						continue
 					}

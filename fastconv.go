@@ -23,13 +23,8 @@ type convError struct{ error }
 
 // DeepCopy returns a "deep" copy of v.
 func DeepCopy[T any](v T) (T, error) {
-	l := GetBuffer()
-	defer PutBuffer(l)
 	var r T
-	if err := Encode(l, v); err != nil {
-		return r, err
-	}
-	if err := Decode(l, &r); err != nil {
+	if err := Convert(v, &r); err != nil {
 		return r, err
 	}
 	return r, nil

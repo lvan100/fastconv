@@ -1,17 +1,17 @@
 package fastconv
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 )
 
+// Decode todo 补充注释
 func Decode(l *Buffer, v interface{}) (err error) {
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("")
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
+		return &InvalidDecodeError{reflect.TypeOf(v)}
 	}
 
 	defer func() {
@@ -27,6 +27,22 @@ func Decode(l *Buffer, v interface{}) (err error) {
 	d := &decodeState{Buffer: l}
 	decodeValue(d, &d.buf[0], rv)
 	return
+}
+
+// An InvalidDecodeError describes an invalid argument passed to Decode.
+// (The argument to Decode must be a non-nil pointer.)
+type InvalidDecodeError struct {
+	Type reflect.Type
+}
+
+func (e *InvalidDecodeError) Error() string {
+	if e.Type == nil {
+		return "fastconv: Decode(nil)"
+	}
+	if e.Type.Kind() != reflect.Pointer {
+		return "fastconv: Decode(non-pointer " + e.Type.String() + ")"
+	}
+	return "fastconv: Decode(nil " + e.Type.String() + ")"
 }
 
 type decoderFunc func(d *decodeState, p *Value, v reflect.Value)
@@ -76,9 +92,9 @@ type Number interface {
 	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
 }
 
-// dupSlice duplicates a slice.
+// dupSlice duplicates a slice of type bool, Number, string.
 func dupSlice[T bool | Number | string](v []T) []T {
-	r := make([]T, len(v))
+	r := make([]T, len(v), len(v))
 	copy(r, v)
 	return r
 }
@@ -132,14 +148,14 @@ func valueInterface(d *decodeState, p *Value) interface{} {
 	case Map:
 		arr := d.buf[p.First : p.First+p.Length]
 		return objectInterface(d, arr)
-	default:
-		panic(&convError{fmt.Errorf("unexpected kind %v", p.Type)})
+	default: // should never happen
+		panic(fmt.Errorf("unexpected kind %v", p.Type))
 	}
 }
 
 // arrayInterface returns p's underlying value as [[]interface{}].
 func arrayInterface(d *decodeState, v []Value) []interface{} {
-	r := make([]interface{}, len(v))
+	r := make([]interface{}, len(v), len(v))
 	for i, p := range v {
 		r[i] = valueInterface(d, &p)
 	}
@@ -182,6 +198,8 @@ func decodeBool(d *decodeState, p *Value, v reflect.Value) {
 		v.SetFloat(f)
 	case reflect.String:
 		v.SetString(strconv.FormatBool(p.Bool()))
+	default:
+		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
 	}
 }
 
@@ -200,6 +218,8 @@ func decodeInt(d *decodeState, p *Value, v reflect.Value) {
 		v.SetFloat(float64(p.Int()))
 	case reflect.String:
 		v.SetString(strconv.FormatInt(p.Int(), 64))
+	default:
+		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
 	}
 }
 
@@ -218,6 +238,8 @@ func decodeUint(d *decodeState, p *Value, v reflect.Value) {
 		v.SetFloat(float64(p.Uint()))
 	case reflect.String:
 		v.SetString(strconv.FormatUint(p.Uint(), 64))
+	default:
+		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
 	}
 }
 
@@ -236,6 +258,8 @@ func decodeFloat(d *decodeState, p *Value, v reflect.Value) {
 		v.SetFloat(p.Float())
 	case reflect.String:
 		v.SetString(strconv.FormatFloat(p.Float(), 'f', -1, 64))
+	default:
+		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
 	}
 }
 
@@ -270,77 +294,80 @@ func decodeString(d *decodeState, p *Value, v reflect.Value) {
 		v.SetFloat(f)
 	case reflect.String:
 		v.SetString(p.String())
+	default:
+		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
 	}
 }
 
 // decodeBools decodes []bool value
 func decodeBools(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Bools())))
 }
 
 // decodeInts decodes []int value
 func decodeInts(d *decodeState, p *Value, v reflect.Value) {
+	v.Set(reflect.ValueOf(dupSlice(p.Ints())))
 
 }
 
 // decodeInt8s decodes []int8 value
 func decodeInt8s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Int8s())))
 }
 
 // decodeInt16s decodes []int16 value
 func decodeInt16s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Int16s())))
 }
 
 // decodeInt32s decodes []int32 value
 func decodeInt32s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Int32s())))
 }
 
 // decodeInt64s decodes []int64 value
 func decodeInt64s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Int64s())))
 }
 
 // decodeUints decodes []uint value
 func decodeUints(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Uints())))
 }
 
 // decodeUint8s decodes []uint8 value
 func decodeUint8s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Uint8s())))
 }
 
 // decodeUint16s decodes []uint16 value
 func decodeUint16s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Uint16s())))
 }
 
 // decodeUint32s decodes []uint32 value
 func decodeUint32s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Uint32s())))
 }
 
 // decodeUint64s decodes []uint64 value
 func decodeUint64s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Uint64s())))
 }
 
 // decodeFloat32s decodes []float32 value
 func decodeFloat32s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Float32s())))
 }
 
 // decodeFloat64s decodes []float64 value
 func decodeFloat64s(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Float64s())))
 }
 
 // decodeStrings decodes []string value
 func decodeStrings(d *decodeState, p *Value, v reflect.Value) {
-
+	v.Set(reflect.ValueOf(dupSlice(p.Strings())))
 }
 
 // decodeSlice decodes slice value
@@ -351,8 +378,8 @@ func decodeSlice(d *decodeState, p *Value, v reflect.Value) {
 	}
 	switch v.Kind() {
 	case reflect.Interface:
-		arr := arrayInterface(d, arr)
-		v.Set(reflect.ValueOf(arr))
+		r := arrayInterface(d, arr)
+		v.Set(reflect.ValueOf(r))
 	default:
 		n := len(arr)
 		if v.Kind() == reflect.Slice {
@@ -386,11 +413,11 @@ func decodeMap(d *decodeState, p *Value, v reflect.Value) {
 		if p.Length > 0 {
 			arr = d.buf[p.First : p.First+p.Length]
 		}
-		oi := objectInterface(d, arr)
-		v.Set(reflect.ValueOf(oi))
+		r := objectInterface(d, arr)
+		v.Set(reflect.ValueOf(r))
 	case reflect.Map:
 		if t.Key().Kind() != reflect.String {
-			return
+			panic(&convError{fmt.Errorf("unsupported map key type %s", t.Key())})
 		}
 		if v.IsNil() {
 			v.Set(reflect.MakeMap(t))
@@ -403,6 +430,8 @@ func decodeMap(d *decodeState, p *Value, v reflect.Value) {
 		}
 	case reflect.Struct:
 		decodeStruct(d, p, v, t)
+	default:
+		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
 	}
 }
 
@@ -419,8 +448,8 @@ func decodeStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 			if subValue.Kind() == reflect.Ptr {
 				if subValue.IsNil() {
 					if !subValue.CanSet() {
-						subValue = reflect.Value{}
-						break
+						err := fmt.Errorf("fastconv: cannot set embedded pointer to unexported struct: %v", subValue.Type().Elem())
+						panic(&convError{err})
 					}
 					subValue.Set(reflect.New(subValue.Type().Elem()))
 				}
@@ -432,17 +461,18 @@ func decodeStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 	}
 }
 
+// makeValue walks down v allocating pointers as needed, until it gets to a non-pointer.
 func makeValue(v reflect.Value) reflect.Value {
 	for {
 		if v.Kind() == reflect.Interface && !v.IsNil() {
 			e := v.Elem()
-			if e.Kind() == reflect.Ptr && !e.IsNil() && e.Elem().Kind() == reflect.Ptr {
+			if e.Kind() == reflect.Pointer && !e.IsNil() {
 				v = e
 				continue
 			}
 		}
 
-		if v.Kind() != reflect.Ptr {
+		if v.Kind() != reflect.Pointer {
 			break
 		}
 
