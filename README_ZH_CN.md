@@ -1,30 +1,30 @@
 # fastconv
 
-English | [中文](README_ZH_CN.md)
+[English](README.md) | 中文
 
 最快的 map 和 struct 互转库 🚀🚀🚀
 
-## Features
+## 特色
 
-- Zero GC
-- No Hack
+- 零 GC
+- 没有偏招
 - 🚀🚀🚀🚀
 
-## Benchmarks
+## 基准测试
 
-## Requirements
+## 编译
 
 ```
 go 1.21+
 ```
 
-## Installation
+## 安装
 
 ```
 go get github.com/lvan100/fastconv
 ```
 
-## Examples
+## 示例
 
 ```
 src := map / struct / slice
@@ -32,11 +32,11 @@ dst := map / struct / slice
 fastconv.Convert(src, dst)
 ```
 
-## Give a Star! ⭐
+## 点个赞吧! ⭐
 
-If you like this project, please give it a star. Thanks!
+如果你喜欢这个项目，请给它一颗星星。谢谢！
 
-## License
+## 许可证
 
 FastConv is Open Source software released under the
 [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).
