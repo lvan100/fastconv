@@ -6,11 +6,14 @@ English | [中文](README_ZH_CN.md)
 
 ## Features
 
-- Zero GC
-- No Hack
-- 🚀🚀🚀🚀
+- Zero GC, Pool & Compress, reducing small objects.
+- All CPU architectures, Not for specific CPU arch.
+- 10 times Faster than json Marshal / Unmarshal.
+- Compatible with json tags.
 
 ## Benchmarks
+
+![Benchmarks.png](Benchmarks.png)
 
 ## Requirements
 
