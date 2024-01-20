@@ -28,11 +28,7 @@ import (
 
 // Encode todo 补充注释
 func Encode(l *Buffer, v interface{}) (err error) {
-
 	rv := reflect.ValueOf(v)
-	if !rv.IsValid() || rv.IsNil() {
-		return
-	}
 
 	defer func() {
 		if r := recover(); r != nil {

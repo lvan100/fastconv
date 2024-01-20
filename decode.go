@@ -17,6 +17,7 @@
 package fastconv
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -26,8 +27,11 @@ import (
 func Decode(l *Buffer, v interface{}) (err error) {
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Pointer || rv.IsNil() {
-		return &InvalidDecodeError{reflect.TypeOf(v)}
+	if rv.IsNil() {
+		return errors.New("fastconv: Decode(nil)")
+	}
+	if rv.Kind() != reflect.Pointer {
+		return fmt.Errorf("fastconv: Decode(non-pointer %s)", rv.Type())
 	}
 
 	defer func() {
@@ -43,22 +47,6 @@ func Decode(l *Buffer, v interface{}) (err error) {
 	d := &decodeState{Buffer: l}
 	decodeValue(d, &d.buf[0], rv)
 	return
-}
-
-// An InvalidDecodeError describes an invalid argument passed to Decode.
-// (The argument to Decode must be a non-nil pointer.)
-type InvalidDecodeError struct {
-	Type reflect.Type
-}
-
-func (e *InvalidDecodeError) Error() string {
-	if e.Type == nil {
-		return "fastconv: Decode(nil)"
-	}
-	if e.Type.Kind() != reflect.Pointer {
-		return "fastconv: Decode(non-pointer " + e.Type.String() + ")"
-	}
-	return "fastconv: Decode(nil " + e.Type.String() + ")"
 }
 
 type decoderFunc func(d *decodeState, p *Value, v reflect.Value)

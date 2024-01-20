@@ -24,7 +24,21 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lvan100/fastconv/internal/assert"
 )
+
+func success[T, R any](t *testing.T, v T, expect R) {
+	var r R
+	err := Convert(v, &r)
+	assert.Nil(t, err)
+	rv := reflect.ValueOf(r)
+	if rv.Kind() == reflect.Pointer {
+		assert.Equal(t, r, expect)
+	} else {
+		assert.Same(t, r, expect)
+	}
+}
 
 func Test_encodeValue(t *testing.T) {
 	type args struct {
@@ -732,84 +746,6 @@ type SearchMetadata struct {
 	MaxIDStr    string  `json:"max_id_str"`
 }
 
-func BenchmarkConvert_Interface(b *testing.B) {
-
-	var src interface{}
-	{
-		err := json.Unmarshal([]byte(TwitterJson), &src)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	b.Run("json", func(b *testing.B) {
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				data, err := json.Marshal(src)
-				if err != nil {
-					panic(err)
-				}
-				var d1 TwitterStruct
-				err = json.Unmarshal(data, &d1)
-				if err != nil {
-					panic(err)
-				}
-			}
-		})
-	})
-
-	b.Run("fastconv", func(b *testing.B) {
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				var d2 TwitterStruct
-				err := Convert(src, &d2)
-				if err != nil {
-					panic(err)
-				}
-			}
-		})
-	})
-}
-
-func BenchmarkConvert_Struct(b *testing.B) {
-
-	var src *TwitterStruct
-	{
-		err := json.Unmarshal([]byte(TwitterJson), &src)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	b.Run("json", func(b *testing.B) {
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				data, err := json.Marshal(src)
-				if err != nil {
-					panic(err)
-				}
-				var d1 TwitterStruct
-				err = json.Unmarshal(data, &d1)
-				if err != nil {
-					panic(err)
-				}
-			}
-		})
-	})
-
-	b.Run("fastconv", func(b *testing.B) {
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				var d2 TwitterStruct
-				err := Convert(src, &d2)
-				if err != nil {
-					panic(err)
-				}
-			}
-		})
-	})
-}
-
 func TestBenchConvert(t *testing.T) {
 
 	var src interface{}
@@ -860,6 +796,7 @@ func TestBenchConvert(t *testing.T) {
 		{
 			b1, _ := json.Marshal(p1)
 			b2, _ := json.Marshal(p2)
+			p1, p2 = nil, nil
 			_ = json.Unmarshal(b1, &p1)
 			_ = json.Unmarshal(b2, &p2)
 		}
