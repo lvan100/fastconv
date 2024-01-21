@@ -87,8 +87,17 @@ type decodeState struct {
 
 // decodeValue decodes the value stored in p [*Value] into v [reflect.Value].
 func decodeValue(d *decodeState, p *Value, v reflect.Value) {
+	for {
+		if v.Kind() != reflect.Pointer {
+			break
+		}
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		v = v.Elem()
+	}
 	if f := decoders[p.Type]; f != nil {
-		f(d, p, makeValue(v))
+		f(d, p, v)
 	}
 }
 
@@ -713,7 +722,7 @@ func decodeStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 			continue
 		}
 		subValue := v
-		for _, j := range f.index {
+		for _, j := range f.index { // embed are unusual.
 			if subValue.Kind() == reflect.Ptr {
 				if subValue.IsNil() {
 					if !subValue.CanSet() {
@@ -728,35 +737,4 @@ func decodeStruct(d *decodeState, p *Value, v reflect.Value, t reflect.Type) {
 		}
 		decodeValue(d, e, subValue)
 	}
-}
-
-// makeValue walks down v allocating pointers as needed, until it gets to a non-pointer.
-func makeValue(v reflect.Value) reflect.Value {
-	for {
-		if v.Kind() == reflect.Interface && !v.IsNil() {
-			e := v.Elem()
-			if e.Kind() == reflect.Pointer && !e.IsNil() {
-				v = e
-				continue
-			}
-		}
-
-		if v.Kind() != reflect.Pointer {
-			break
-		}
-
-		// Prevent infinite loop if v is an interface pointing to its own address:
-		//     var v interface{}
-		//     v = &v
-		if v.Elem().Kind() == reflect.Interface && v.Elem().Elem() == v {
-			v = v.Elem()
-			break
-		}
-		if v.IsNil() {
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-
-		v = v.Elem()
-	}
-	return v
 }

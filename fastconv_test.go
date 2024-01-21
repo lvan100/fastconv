@@ -716,11 +716,11 @@ type Statuses struct {
 	Truncated            bool        `json:"truncated"`
 	CreatedAt            string      `json:"created_at"`
 	IDStr                string      `json:"id_str"`
-	Entities             Entities    `json:"entities"`
+	Entities             *Entities   `json:"entities"`
 	InReplyToUserIDStr   interface{} `json:"in_reply_to_user_id_str"`
 	Contributors         interface{} `json:"contributors"`
 	Text                 string      `json:"text"`
-	Metadata             Metadata    `json:"metadata"`
+	Metadata             *Metadata   `json:"metadata"`
 	RetweetCount         int         `json:"retweet_count"`
 	InReplyToStatusIDStr interface{} `json:"in_reply_to_status_id_str"`
 	ID                   int64       `json:"id"`
@@ -728,7 +728,7 @@ type Statuses struct {
 	Retweeted            bool        `json:"retweeted"`
 	InReplyToUserID      interface{} `json:"in_reply_to_user_id"`
 	Place                interface{} `json:"place"`
-	User                 User        `json:"user"`
+	User                 *User       `json:"user"`
 	InReplyToScreenName  interface{} `json:"in_reply_to_screen_name"`
 	Source               string      `json:"source"`
 	InReplyToStatusID    interface{} `json:"in_reply_to_status_id"`

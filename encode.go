@@ -559,7 +559,7 @@ func (se structEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 		f := &se.fields.list[j]
 		fv := v
 		breakNil := false
-		for _, i := range f.index {
+		for _, i := range f.index { // embed are unusual.
 			if fv.Kind() == reflect.Pointer {
 				if fv.IsNil() {
 					breakNil = true
@@ -763,7 +763,7 @@ func typeFields(t reflect.Type) structFields {
 
 	for i := range fields {
 		f := &fields[i]
-		f.encoder = cachedTypeEncoder(typeByIndex(t, f.index))
+		f.encoder = cachedTypeEncoder(f.typ)
 	}
 
 	exactNameIndex := make(map[string]*structField, len(fields))
@@ -771,16 +771,6 @@ func typeFields(t reflect.Type) structFields {
 		exactNameIndex[field.name] = &fields[i]
 	}
 	return structFields{fields, exactNameIndex}
-}
-
-func typeByIndex(t reflect.Type, index []int) reflect.Type {
-	for _, i := range index {
-		if t.Kind() == reflect.Pointer {
-			t = t.Elem()
-		}
-		t = t.Field(i).Type
-	}
-	return t
 }
 
 // dominantField looks through the fields, all of which are known to
