@@ -28,7 +28,15 @@ import (
 	"github.com/lvan100/fastconv/internal/assert"
 )
 
+func fail[T, R any](t *testing.T, v T, err error) {
+	t.Helper()
+	var r R
+	ret := Convert(v, &r)
+	assert.Equal(t, ret, err)
+}
+
 func success[T, R any](t *testing.T, v T, expect R) {
+	t.Helper()
 	var r R
 	err := Convert(v, &r)
 	assert.Nil(t, err)

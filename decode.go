@@ -212,7 +212,7 @@ func decodeBool(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.String:
 		v.SetString(strconv.FormatBool(p.Bool()))
 	default:
-		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
+		panic(&convError{fmt.Errorf("can't convert bool to %s", v.Type())})
 	}
 }
 
@@ -232,7 +232,7 @@ func decodeInt(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.String:
 		v.SetString(strconv.FormatInt(p.Int(), 10))
 	default:
-		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
+		panic(&convError{fmt.Errorf("can't convert int64 to %s", v.Type())})
 	}
 }
 
@@ -252,7 +252,7 @@ func decodeUint(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.String:
 		v.SetString(strconv.FormatUint(p.Uint(), 10))
 	default:
-		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
+		panic(&convError{fmt.Errorf("can't convert uint64 to %s", v.Type())})
 	}
 }
 
@@ -272,7 +272,7 @@ func decodeFloat(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.String:
 		v.SetString(strconv.FormatFloat(p.Float(), 'f', -1, 64))
 	default:
-		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
+		panic(&convError{fmt.Errorf("can't convert float64 to %s", v.Type())})
 	}
 }
 
@@ -308,7 +308,7 @@ func decodeString(d *decodeState, p *Value, v reflect.Value) {
 	case reflect.String:
 		v.SetString(p.String())
 	default:
-		panic(&convError{fmt.Errorf("unsupported type %s", v.Type())})
+		panic(&convError{fmt.Errorf("can't convert string to %s", v.Type())})
 	}
 }
 
