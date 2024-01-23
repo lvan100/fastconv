@@ -65,7 +65,7 @@ func TestConvert_Int(t *testing.T) {
 		success[int, *uint64](t, 3, Ptr(uint64(3)))
 		success[int, *float32](t, 3, Ptr(float32(3)))
 		success[int, *float64](t, 3, Ptr(float64(3)))
-		success[int, *string](t, 3, Ptr(string("3")))
+		success[int, *string](t, 3, Ptr("3"))
 
 		fail[int, *uintptr](t, 3, errors.New("can't convert int64 to uintptr"))
 		fail[int, *complex64](t, 3, errors.New("can't convert int64 to complex64"))
@@ -120,7 +120,7 @@ func TestConvert_Int(t *testing.T) {
 		success[int8, *uint64](t, 3, Ptr(uint64(3)))
 		success[int8, *float32](t, 3, Ptr(float32(3)))
 		success[int8, *float64](t, 3, Ptr(float64(3)))
-		success[int8, *string](t, 3, Ptr(string("3")))
+		success[int8, *string](t, 3, Ptr("3"))
 
 		fail[int8, *uintptr](t, 3, errors.New("can't convert int64 to uintptr"))
 		fail[int8, *complex64](t, 3, errors.New("can't convert int64 to complex64"))
@@ -175,7 +175,7 @@ func TestConvert_Int(t *testing.T) {
 		success[int16, *uint64](t, 3, Ptr(uint64(3)))
 		success[int16, *float32](t, 3, Ptr(float32(3)))
 		success[int16, *float64](t, 3, Ptr(float64(3)))
-		success[int16, *string](t, 3, Ptr(string("3")))
+		success[int16, *string](t, 3, Ptr("3"))
 
 		fail[int16, *uintptr](t, 3, errors.New("can't convert int64 to uintptr"))
 		fail[int16, *complex64](t, 3, errors.New("can't convert int64 to complex64"))
@@ -230,7 +230,7 @@ func TestConvert_Int(t *testing.T) {
 		success[int32, *uint64](t, 3, Ptr(uint64(3)))
 		success[int32, *float32](t, 3, Ptr(float32(3)))
 		success[int32, *float64](t, 3, Ptr(float64(3)))
-		success[int32, *string](t, 3, Ptr(string("3")))
+		success[int32, *string](t, 3, Ptr("3"))
 
 		fail[int32, *uintptr](t, 3, errors.New("can't convert int64 to uintptr"))
 		fail[int32, *complex64](t, 3, errors.New("can't convert int64 to complex64"))
@@ -285,7 +285,7 @@ func TestConvert_Int(t *testing.T) {
 		success[int64, *uint64](t, 3, Ptr(uint64(3)))
 		success[int64, *float32](t, 3, Ptr(float32(3)))
 		success[int64, *float64](t, 3, Ptr(float64(3)))
-		success[int64, *string](t, 3, Ptr(string("3")))
+		success[int64, *string](t, 3, Ptr("3"))
 
 		fail[int64, *uintptr](t, 3, errors.New("can't convert int64 to uintptr"))
 		fail[int64, *complex64](t, 3, errors.New("can't convert int64 to complex64"))
@@ -343,7 +343,7 @@ func TestConvert_Uint(t *testing.T) {
 		success[uint, *uint64](t, 3, Ptr(uint64(3)))
 		success[uint, *float32](t, 3, Ptr(float32(3)))
 		success[uint, *float64](t, 3, Ptr(float64(3)))
-		success[uint, *string](t, 3, Ptr(string("3")))
+		success[uint, *string](t, 3, Ptr("3"))
 
 		fail[uint, *uintptr](t, 3, errors.New("can't convert uint64 to uintptr"))
 		fail[uint, *complex64](t, 3, errors.New("can't convert uint64 to complex64"))
@@ -398,7 +398,7 @@ func TestConvert_Uint(t *testing.T) {
 		success[uint8, *uint64](t, 3, Ptr(uint64(3)))
 		success[uint8, *float32](t, 3, Ptr(float32(3)))
 		success[uint8, *float64](t, 3, Ptr(float64(3)))
-		success[uint8, *string](t, 3, Ptr(string("3")))
+		success[uint8, *string](t, 3, Ptr("3"))
 
 		fail[uint8, *uintptr](t, 3, errors.New("can't convert uint64 to uintptr"))
 		fail[uint8, *complex64](t, 3, errors.New("can't convert uint64 to complex64"))
@@ -453,7 +453,7 @@ func TestConvert_Uint(t *testing.T) {
 		success[uint16, *uint64](t, 3, Ptr(uint64(3)))
 		success[uint16, *float32](t, 3, Ptr(float32(3)))
 		success[uint16, *float64](t, 3, Ptr(float64(3)))
-		success[uint16, *string](t, 3, Ptr(string("3")))
+		success[uint16, *string](t, 3, Ptr("3"))
 
 		fail[uint16, *uintptr](t, 3, errors.New("can't convert uint64 to uintptr"))
 		fail[uint16, *complex64](t, 3, errors.New("can't convert uint64 to complex64"))
@@ -508,7 +508,7 @@ func TestConvert_Uint(t *testing.T) {
 		success[uint32, *uint64](t, 3, Ptr(uint64(3)))
 		success[uint32, *float32](t, 3, Ptr(float32(3)))
 		success[uint32, *float64](t, 3, Ptr(float64(3)))
-		success[uint32, *string](t, 3, Ptr(string("3")))
+		success[uint32, *string](t, 3, Ptr("3"))
 
 		fail[uint32, *uintptr](t, 3, errors.New("can't convert uint64 to uintptr"))
 		fail[uint32, *complex64](t, 3, errors.New("can't convert uint64 to complex64"))
@@ -563,7 +563,7 @@ func TestConvert_Uint(t *testing.T) {
 		success[uint64, *uint64](t, 3, Ptr(uint64(3)))
 		success[uint64, *float32](t, 3, Ptr(float32(3)))
 		success[uint64, *float64](t, 3, Ptr(float64(3)))
-		success[uint64, *string](t, 3, Ptr(string("3")))
+		success[uint64, *string](t, 3, Ptr("3"))
 
 		fail[uint64, *uintptr](t, 3, errors.New("can't convert uint64 to uintptr"))
 		fail[uint64, *complex64](t, 3, errors.New("can't convert uint64 to complex64"))
@@ -621,7 +621,7 @@ func TestConvert_Float(t *testing.T) {
 		success[float32, *uint64](t, 3, Ptr(uint64(3)))
 		success[float32, *float32](t, 3, Ptr(float32(3)))
 		success[float32, *float64](t, 3, Ptr(float64(3)))
-		success[float32, *string](t, 3, Ptr(string("3")))
+		success[float32, *string](t, 3, Ptr("3"))
 
 		fail[float32, *uintptr](t, 3, errors.New("can't convert float64 to uintptr"))
 		fail[float32, *complex64](t, 3, errors.New("can't convert float64 to complex64"))
@@ -676,7 +676,7 @@ func TestConvert_Float(t *testing.T) {
 		success[float64, *uint64](t, 3, Ptr(uint64(3)))
 		success[float64, *float32](t, 3, Ptr(float32(3)))
 		success[float64, *float64](t, 3, Ptr(float64(3)))
-		success[float64, *string](t, 3, Ptr(string("3")))
+		success[float64, *string](t, 3, Ptr("3"))
 
 		fail[float64, *uintptr](t, 3, errors.New("can't convert float64 to uintptr"))
 		fail[float64, *complex64](t, 3, errors.New("can't convert float64 to complex64"))

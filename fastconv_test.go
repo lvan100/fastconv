@@ -41,9 +41,10 @@ func success[T, R any](t *testing.T, v T, expect R) {
 	err := Convert(v, &r)
 	assert.Nil(t, err)
 	rv := reflect.ValueOf(r)
-	if rv.Kind() == reflect.Pointer {
+	switch rv.Kind() {
+	case reflect.Interface, reflect.Pointer, reflect.Array, reflect.Slice, reflect.Map, reflect.Struct:
 		assert.Equal(t, r, expect)
-	} else {
+	default:
 		assert.Same(t, r, expect)
 	}
 }
