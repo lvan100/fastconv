@@ -28,6 +28,21 @@ import (
 	"github.com/lvan100/fastconv/internal/assert"
 )
 
+func encodeSuccess[V any](t *testing.T, v V, buf []Value) {
+	t.Helper()
+	l := &Buffer{}
+	err := Encode(l, v)
+	assert.Nil(t, err)
+	assert.Equal(t, l.buf, buf)
+}
+
+func encodeFail[V any](t *testing.T, v V, err error) {
+	t.Helper()
+	l := &Buffer{}
+	ret := Encode(l, v)
+	assert.Equal(t, ret, err)
+}
+
 func fail[T, R any](t *testing.T, v T, err error) {
 	t.Helper()
 	var r R
@@ -190,6 +205,12 @@ func Test_encodeValue(t *testing.T) {
 			},
 		},
 	}
+
+	encoderCache.Range(func(key, value any) bool {
+		encoderCache.Delete(key)
+		return true
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
