@@ -17,7 +17,6 @@
 package fastconv
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -41,7 +40,7 @@ func Encode(l *Buffer, v interface{}) (err error) {
 	}()
 
 	e := &encodeState{Buffer: l}
-	e.Append(1)
+	e.Grow(1)
 	c := &e.buf[0]
 	encodeValue(e, c, rv)
 	return
@@ -178,42 +177,33 @@ func newTypeEncoder(t reflect.Type) encoderFunc {
 
 // boolEncoder is the encoderFunc of bool.
 func boolEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Bool
 	p.SetBool(v.Bool())
 }
 
 // intEncoder is the encoderFunc of int, int8, int16, int32 and int64.
 func intEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Int
 	p.SetInt(v.Int())
 }
 
 // uintEncoder is the encoderFunc of uint, uint8, uint16, uint32 and uint64.
 func uintEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Uint
 	p.SetUint(v.Uint())
 }
 
 // floatEncoder is the encoderFunc of float32 and float64.
 func floatEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Float
 	p.SetFloat(v.Float())
 }
 
 // stringEncoder is the encoderFunc of string.
 func stringEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = String
-	old := p.Type
 	p.SetString(v.String())
-	if old != p.Type { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // interfaceEncoder is the encoderFunc of interface{}.
 func interfaceEncoder(e *encodeState, p *Value, v reflect.Value) {
 	if v.IsNil() {
-		p.Type = Nil
+		p.SetNil()
 		return
 	}
 	encodeValue(e, p, v.Elem())
@@ -228,16 +218,15 @@ func sliceInterfaceEncoder(e *encodeState, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(e.buf)
-	p.First = end
-	e.Append(n)
+	p.First = len(e.buf)
+	e.Grow(n)
 	for i, sValue := range s {
+		c := &e.buf[p.First+i]
 		if sValue == nil {
-			e.buf[end+i] = Value{Type: Nil}
-		} else {
-			c := &e.buf[end+i]
-			encodeValue(e, c, reflect.ValueOf(sValue))
+			c.SetNil()
+			continue
 		}
+		encodeValue(e, c, reflect.ValueOf(sValue))
 	}
 }
 
@@ -250,16 +239,15 @@ func mapStringInterfaceEncoder(e *encodeState, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(e.buf)
-	p.First = end
-	e.Append(n)
+	p.First = len(e.buf)
+	e.Grow(n)
 	i := 0
 	for mKey, mValue := range m { // no need to sort keys
+		c := &e.buf[p.First+i]
+		c.Name = mKey
 		if mValue == nil {
-			e.buf[end+i] = Value{Type: Nil, Name: mKey}
+			c.SetNil()
 		} else {
-			c := &e.buf[end+i]
-			c.Name = mKey
 			encodeValue(e, c, reflect.ValueOf(mValue))
 		}
 		i++
@@ -278,7 +266,7 @@ func newPtrEncoder(t reflect.Type) encoderFunc {
 
 func (pe ptrEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 	if v.IsNil() {
-		p.Type = Nil
+		p.SetNil()
 		return
 	}
 	pe.elemEnc(e, p, v.Elem())
@@ -325,142 +313,72 @@ func init() {
 
 // boolsEncoder is the encoderFunc of type []bool.
 func boolsEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Bools
-	old := p.Type
 	p.SetBools(v.Interface().([]bool))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // boolsEncoder is the encoderFunc of type []int.
 func intsEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Ints
-	old := p.Type
 	p.SetInts(v.Interface().([]int))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // int8sEncoder is the encoderFunc of type []int8.
 func int8sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Int8s
-	old := p.Type
 	p.SetInt8s(v.Interface().([]int8))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // int16sEncoder is the encoderFunc of type []int16.
 func int16sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Int16s
-	old := p.Type
 	p.SetInt16s(v.Interface().([]int16))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // int32sEncoder is the encoderFunc of type []int32.
 func int32sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Int32s
-	old := p.Type
 	p.SetInt32s(v.Interface().([]int32))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // int64sEncoder is the encoderFunc of type []int64.
 func int64sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Int64s
-	old := p.Type
 	p.SetInt64s(v.Interface().([]int64))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // uintsEncoder is the encoderFunc of type []uint.
 func uintsEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Uints
-	old := p.Type
 	p.SetUints(v.Interface().([]uint))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // uint8sEncoder is the encoderFunc of type []uint8.
 func uint8sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Uint8s
-	old := p.Type
 	p.SetUint8s(v.Interface().([]uint8))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // uint16sEncoder is the encoderFunc of type []uint16.
 func uint16sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Uint16s
-	old := p.Type
 	p.SetUint16s(v.Interface().([]uint16))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // uint32sEncoder is the encoderFunc of type []uint32.
 func uint32sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Uint32s
-	old := p.Type
 	p.SetUint32s(v.Interface().([]uint32))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // uint64sEncoder is the encoderFunc of type []uin64.
 func uint64sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Uint64s
-	old := p.Type
 	p.SetUint64s(v.Interface().([]uint64))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // float32sEncoder is the encoderFunc of type []float32.
 func float32sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Float32s
-	old := p.Type
 	p.SetFloat32s(v.Interface().([]float32))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // float64sEncoder is the encoderFunc of type []float64.
 func float64sEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Float64s
-	old := p.Type
 	p.SetFloat64s(v.Interface().([]float64))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 // stringsEncoder is the encoderFunc of type []string.
 func stringsEncoder(e *encodeState, p *Value, v reflect.Value) {
-	p.Type = Strings
-	old := p.Type
 	p.SetStrings(v.Interface().([]string))
-	if p.Type != old { // should never happen
-		panic(errors.New("!!! Type was unexpectedly modified"))
-	}
 }
 
 func newArrayEncoder(t reflect.Type) encoderFunc {
@@ -479,11 +397,10 @@ func (ae arrayEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(e.buf)
-	p.First = end
-	e.Append(n)
-	for i := 0; i < n; i++ {
-		c := &e.buf[end+i]
+	p.First = len(e.buf)
+	e.Grow(n)
+	for i := 0; i < p.Length; i++ {
+		c := &e.buf[p.First+i]
 		ae.elemEnc(e, c, v.Index(i))
 	}
 }
@@ -518,14 +435,13 @@ func (me mapEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(e.buf)
-	p.First = end
-	e.Append(n)
+	p.First = len(e.buf)
+	e.Grow(n)
 	i := 0
 	iter := v.MapRange()
 	for iter.Next() { // no need to sort keys
 		var valid bool
-		c := &e.buf[end+i]
+		c := &e.buf[p.First+i]
 		c.Name, valid = validMapKey(iter.Key())
 		if !valid {
 			panic(&convError{fmt.Errorf("invalid map key type %s", iter.Key().Type())})
@@ -552,9 +468,8 @@ func (se structEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 		return
 	}
 	p.Length = n
-	end := len(e.buf)
-	p.First = end
-	e.Append(n)
+	p.First = len(e.buf)
+	e.Grow(n)
 	for j := range se.fields.list {
 		f := &se.fields.list[j]
 		fv := v
@@ -569,12 +484,12 @@ func (se structEncoder) encode(e *encodeState, p *Value, v reflect.Value) {
 			}
 			fv = fv.Field(i)
 		}
+		c := &e.buf[p.First+j]
+		c.Name = f.name
 		if breakNil {
-			e.buf[end+j] = Value{Type: Nil, Name: f.name}
+			c.SetNil()
 			continue
 		}
-		c := &e.buf[end+j]
-		c.Name = f.name
 		f.encoder(e, c, fv)
 	}
 }

@@ -17,6 +17,7 @@
 package fastconv
 
 import (
+	"errors"
 	"slices"
 	"sort"
 	"sync"
@@ -52,6 +53,10 @@ const (
 	Map
 )
 
+var (
+	ZeroValue = Value{}
+)
+
 // Value is used to store a value.
 // When the Type is Bool, Int, Uint, Float, only the Data field is used.
 // When the Type is String, the Data and Length fields are used.
@@ -64,6 +69,11 @@ type Value struct {
 	Name   string
 }
 
+// SetNil sets v's underlying value.
+func (p *Value) SetNil() {
+	p.Type = Nil
+}
+
 // Bool returns v's underlying value.
 func (p *Value) Bool() bool {
 	return *(*bool)(unsafe.Pointer(&p.Data))
@@ -71,6 +81,7 @@ func (p *Value) Bool() bool {
 
 // SetBool sets v's underlying value.
 func (p *Value) SetBool(b bool) {
+	p.Type = Bool
 	*(*bool)(unsafe.Pointer(&p.Data)) = b
 }
 
@@ -81,6 +92,7 @@ func (p *Value) Int() int64 {
 
 // SetInt sets v's underlying value.
 func (p *Value) SetInt(i int64) {
+	p.Type = Int
 	*(*int64)(unsafe.Pointer(&p.Data)) = i
 }
 
@@ -91,6 +103,7 @@ func (p *Value) Uint() uint64 {
 
 // SetUint sets v's underlying value.
 func (p *Value) SetUint(u uint64) {
+	p.Type = Uint
 	*(*uint64)(unsafe.Pointer(&p.Data)) = u
 }
 
@@ -101,6 +114,7 @@ func (p *Value) Float() float64 {
 
 // SetFloat sets v's underlying value.
 func (p *Value) SetFloat(f float64) {
+	p.Type = Float
 	*(*float64)(unsafe.Pointer(&p.Data)) = f
 }
 
@@ -111,7 +125,11 @@ func (p *Value) String() string {
 
 // SetString sets v's underlying value.
 func (p *Value) SetString(s string) {
+	p.Type = String
 	*(*string)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != String { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Bools returns v's underlying value.
@@ -121,7 +139,11 @@ func (p *Value) Bools() []bool {
 
 // SetBools sets v's underlying value.
 func (p *Value) SetBools(s []bool) {
+	p.Type = Bools
 	*(*[]bool)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Bools { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Ints returns v's underlying value.
@@ -131,7 +153,11 @@ func (p *Value) Ints() []int {
 
 // SetInts sets v's underlying value.
 func (p *Value) SetInts(s []int) {
+	p.Type = Ints
 	*(*[]int)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Ints { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Int8s returns v's underlying value.
@@ -141,7 +167,11 @@ func (p *Value) Int8s() []int8 {
 
 // SetInt8s sets v's underlying value.
 func (p *Value) SetInt8s(s []int8) {
+	p.Type = Int8s
 	*(*[]int8)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Int8s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Int16s returns v's underlying value.
@@ -151,7 +181,11 @@ func (p *Value) Int16s() []int16 {
 
 // SetInt16s sets v's underlying value.
 func (p *Value) SetInt16s(s []int16) {
+	p.Type = Int16s
 	*(*[]int16)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Int16s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Int32s returns v's underlying value.
@@ -161,7 +195,11 @@ func (p *Value) Int32s() []int32 {
 
 // SetInt32s sets v's underlying value.
 func (p *Value) SetInt32s(s []int32) {
+	p.Type = Int32s
 	*(*[]int32)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Int32s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Int64s returns v's underlying value.
@@ -171,7 +209,11 @@ func (p *Value) Int64s() []int64 {
 
 // SetInt64s sets v's underlying value.
 func (p *Value) SetInt64s(s []int64) {
+	p.Type = Int64s
 	*(*[]int64)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Int64s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Uints returns v's underlying value.
@@ -181,7 +223,11 @@ func (p *Value) Uints() []uint {
 
 // SetUints sets v's underlying value.
 func (p *Value) SetUints(s []uint) {
+	p.Type = Uints
 	*(*[]uint)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Uints { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Uint8s returns v's underlying value.
@@ -191,7 +237,11 @@ func (p *Value) Uint8s() []uint8 {
 
 // SetUint8s sets v's underlying value.
 func (p *Value) SetUint8s(s []uint8) {
+	p.Type = Uint8s
 	*(*[]uint8)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Uint8s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Uint16s returns v's underlying value.
@@ -201,7 +251,11 @@ func (p *Value) Uint16s() []uint16 {
 
 // SetUint16s sets v's underlying value.
 func (p *Value) SetUint16s(s []uint16) {
+	p.Type = Uint16s
 	*(*[]uint16)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Uint16s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Uint32s returns v's underlying value.
@@ -211,7 +265,11 @@ func (p *Value) Uint32s() []uint32 {
 
 // SetUint32s sets v's underlying value.
 func (p *Value) SetUint32s(s []uint32) {
+	p.Type = Uint32s
 	*(*[]uint32)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Uint32s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Uint64s returns v's underlying value.
@@ -221,7 +279,11 @@ func (p *Value) Uint64s() []uint64 {
 
 // SetUint64s sets v's underlying value.
 func (p *Value) SetUint64s(s []uint64) {
+	p.Type = Uint64s
 	*(*[]uint64)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Uint64s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Float32s returns v's underlying value.
@@ -231,7 +293,11 @@ func (p *Value) Float32s() []float32 {
 
 // SetFloat32s sets v's underlying value.
 func (p *Value) SetFloat32s(s []float32) {
+	p.Type = Float32s
 	*(*[]float32)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Float32s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Float64s returns v's underlying value.
@@ -241,7 +307,11 @@ func (p *Value) Float64s() []float64 {
 
 // SetFloat64s sets v's underlying value.
 func (p *Value) SetFloat64s(s []float64) {
+	p.Type = Float64s
 	*(*[]float64)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Float64s { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // Strings returns v's underlying value.
@@ -251,7 +321,11 @@ func (p *Value) Strings() []string {
 
 // SetStrings sets v's underlying value.
 func (p *Value) SetStrings(s []string) {
+	p.Type = Strings
 	*(*[]string)(unsafe.Pointer(&p.Data)) = s
+	if p.Type != Strings { // should never happen
+		panic(errors.New("!!! Type was unexpectedly modified"))
+	}
 }
 
 // A Buffer is a variable-sized buffer of Value.
@@ -261,19 +335,14 @@ type Buffer struct {
 
 // Reset resets the buffer to be empty.
 func (b *Buffer) Reset() {
+	for i := 0; i < len(b.buf); i++ {
+		b.buf[i] = ZeroValue
+	}
 	b.buf = b.buf[:0]
 }
 
-// Append appends n [Value]s to the buffer, growing if needed.
-func (b *Buffer) Append(n int) {
-	b.grow(n)
-	for i := 0; i < n; i++ {
-		b.buf = append(b.buf, Value{})
-	}
-}
-
-// grow grows the buffer to guarantee space for n more [Value]s.
-func (b *Buffer) grow(n int) {
+// Grow grows the buffer to guarantee space for n more [Value]s.
+func (b *Buffer) Grow(n int) {
 	c := cap(b.buf)
 	l := len(b.buf)
 	if l+n > c {
@@ -286,7 +355,163 @@ func (b *Buffer) grow(n int) {
 		copy(buf, b.buf[:l])
 		b.buf = buf
 	}
+	b.buf = b.buf[:l+n]
 }
+
+//
+//func (b *Buffer) Nil() *Buffer {
+//	var v Value
+//	v.SetNil()
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Bool(x bool) *Buffer {
+//	var v Value
+//	v.SetBool(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Int(x int64) *Buffer {
+//	var v Value
+//	v.SetInt(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Uint(x uint64) *Buffer {
+//	var v Value
+//	v.SetUint(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Float(x float64) *Buffer {
+//	var v Value
+//	v.SetFloat(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) String(x string) *Buffer {
+//	var v Value
+//	v.SetString(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Bools(x []bool) *Buffer {
+//	var v Value
+//	v.SetBools(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Ints(x []int) *Buffer {
+//	var v Value
+//	v.SetInts(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Int8s(x []int8) *Buffer {
+//	var v Value
+//	v.SetInt8s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Int16s(x []int16) *Buffer {
+//	var v Value
+//	v.SetInt16s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Int32s(x []int32) *Buffer {
+//	var v Value
+//	v.SetInt32s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Int64s(x []int64) *Buffer {
+//	var v Value
+//	v.SetInt64s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Uints(x []uint) *Buffer {
+//	var v Value
+//	v.SetUints(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Uint8s(x []uint8) *Buffer {
+//	var v Value
+//	v.SetUint8s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Uint16s(x []uint16) *Buffer {
+//	var v Value
+//	v.SetUint16s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Uint32s(x []uint32) *Buffer {
+//	var v Value
+//	v.SetUint32s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Uint64s(x []uint64) *Buffer {
+//	var v Value
+//	v.SetUint64s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Float32s(x []float32) *Buffer {
+//	var v Value
+//	v.SetFloat32s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Float64s(x []float64) *Buffer {
+//	var v Value
+//	v.SetFloat64s(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Strings(x []string) *Buffer {
+//	var v Value
+//	v.SetStrings(x)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Slice(n int, fn func()) *Buffer {
+//	var v Value
+//	v.SetSlice(n)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
+//
+//func (b *Buffer) Map(n int, fn func()) *Buffer {
+//	var v Value
+//	v.SetMap(n)
+//	b.buf = append(b.buf, v)
+//	return b
+//}
 
 // bufferPool pools the [Buffer]s.
 var bufferPool sync.Pool
