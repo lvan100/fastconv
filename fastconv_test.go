@@ -28,17 +28,17 @@ import (
 	"github.com/lvan100/fastconv/internal/assert"
 )
 
-func encodeSuccess[V any](t *testing.T, v V, buf []Value) {
+func encodeSuccess(t *testing.T, v any, p *Buffer) {
 	t.Helper()
-	l := &Buffer{}
+	l := GetBuffer()
 	err := Encode(l, v)
 	assert.Nil(t, err)
-	assert.Equal(t, l.buf, buf)
+	assert.Equal(t, l.buf, p.buf)
 }
 
-func encodeFail[V any](t *testing.T, v V, err error) {
+func encodeFail(t *testing.T, v any, err error) {
 	t.Helper()
-	l := &Buffer{}
+	l := GetBuffer()
 	ret := Encode(l, v)
 	assert.Equal(t, ret, err)
 }

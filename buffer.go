@@ -358,160 +358,167 @@ func (b *Buffer) Grow(n int) {
 	b.buf = b.buf[:l+n]
 }
 
-//
-//func (b *Buffer) Nil() *Buffer {
-//	var v Value
-//	v.SetNil()
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Bool(x bool) *Buffer {
-//	var v Value
-//	v.SetBool(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Int(x int64) *Buffer {
-//	var v Value
-//	v.SetInt(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Uint(x uint64) *Buffer {
-//	var v Value
-//	v.SetUint(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Float(x float64) *Buffer {
-//	var v Value
-//	v.SetFloat(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) String(x string) *Buffer {
-//	var v Value
-//	v.SetString(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Bools(x []bool) *Buffer {
-//	var v Value
-//	v.SetBools(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Ints(x []int) *Buffer {
-//	var v Value
-//	v.SetInts(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Int8s(x []int8) *Buffer {
-//	var v Value
-//	v.SetInt8s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Int16s(x []int16) *Buffer {
-//	var v Value
-//	v.SetInt16s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Int32s(x []int32) *Buffer {
-//	var v Value
-//	v.SetInt32s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Int64s(x []int64) *Buffer {
-//	var v Value
-//	v.SetInt64s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Uints(x []uint) *Buffer {
-//	var v Value
-//	v.SetUints(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Uint8s(x []uint8) *Buffer {
-//	var v Value
-//	v.SetUint8s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Uint16s(x []uint16) *Buffer {
-//	var v Value
-//	v.SetUint16s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Uint32s(x []uint32) *Buffer {
-//	var v Value
-//	v.SetUint32s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Uint64s(x []uint64) *Buffer {
-//	var v Value
-//	v.SetUint64s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Float32s(x []float32) *Buffer {
-//	var v Value
-//	v.SetFloat32s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Float64s(x []float64) *Buffer {
-//	var v Value
-//	v.SetFloat64s(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Strings(x []string) *Buffer {
-//	var v Value
-//	v.SetStrings(x)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Slice(n int, fn func()) *Buffer {
-//	var v Value
-//	v.SetSlice(n)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
-//
-//func (b *Buffer) Map(n int, fn func()) *Buffer {
-//	var v Value
-//	v.SetMap(n)
-//	b.buf = append(b.buf, v)
-//	return b
-//}
+func (b *Buffer) Nil(name string) *Buffer {
+	v := Value{Name: name}
+	v.SetNil()
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Bool(name string, x bool) *Buffer {
+	v := Value{Name: name}
+	v.SetBool(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Int(name string, x int64) *Buffer {
+	v := Value{Name: name}
+	v.SetInt(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Uint(name string, x uint64) *Buffer {
+	v := Value{Name: name}
+	v.SetUint(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Float(name string, x float64) *Buffer {
+	v := Value{Name: name}
+	v.SetFloat(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) String(name string, x string) *Buffer {
+	v := Value{Name: name}
+	v.SetString(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Bools(name string, x []bool) *Buffer {
+	v := Value{Name: name}
+	v.SetBools(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Ints(name string, x []int) *Buffer {
+	v := Value{Name: name}
+	v.SetInts(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Int8s(name string, x []int8) *Buffer {
+	v := Value{Name: name}
+	v.SetInt8s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Int16s(name string, x []int16) *Buffer {
+	v := Value{Name: name}
+	v.SetInt16s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Int32s(name string, x []int32) *Buffer {
+	v := Value{Name: name}
+	v.SetInt32s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Int64s(name string, x []int64) *Buffer {
+	v := Value{Name: name}
+	v.SetInt64s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Uints(name string, x []uint) *Buffer {
+	v := Value{Name: name}
+	v.SetUints(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Uint8s(name string, x []uint8) *Buffer {
+	v := Value{Name: name}
+	v.SetUint8s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Uint16s(name string, x []uint16) *Buffer {
+	v := Value{Name: name}
+	v.SetUint16s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Uint32s(name string, x []uint32) *Buffer {
+	v := Value{Name: name}
+	v.SetUint32s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Uint64s(name string, x []uint64) *Buffer {
+	v := Value{Name: name}
+	v.SetUint64s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Float32s(name string, x []float32) *Buffer {
+	v := Value{Name: name}
+	v.SetFloat32s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Float64s(name string, x []float64) *Buffer {
+	v := Value{Name: name}
+	v.SetFloat64s(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Strings(name string, x []string) *Buffer {
+	v := Value{Name: name}
+	v.SetStrings(x)
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Slice(name string, length, first int) *Buffer {
+	v := Value{
+		Length: length,
+		First:  first,
+		Type:   Slice,
+		Name:   name,
+	}
+	b.buf = append(b.buf, v)
+	return b
+}
+
+func (b *Buffer) Map(name string, length, first int) *Buffer {
+	v := Value{
+		Length: length,
+		First:  first,
+		Type:   Map,
+		Name:   name,
+	}
+	b.buf = append(b.buf, v)
+	return b
+}
 
 // bufferPool pools the [Buffer]s.
 var bufferPool sync.Pool

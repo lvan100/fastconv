@@ -21,18 +21,16 @@ import (
 	"testing"
 )
 
+func TestEncode_Bool(t *testing.T) {
+	encodeSuccess(t, true, GetBuffer().Bool("", true))
+	encodeSuccess(t, false, GetBuffer().Bool("", false))
+	encodeSuccess(t, Ptr(true), GetBuffer().Bool("", true))
+	encodeSuccess(t, Ptr(false), GetBuffer().Bool("", false))
+	encodeSuccess(t, Ptr(Ptr(true)), GetBuffer().Bool("", true))
+	encodeSuccess(t, Ptr(Ptr(false)), GetBuffer().Bool("", false))
+}
+
 func TestConvert_Bool(t *testing.T) {
-
-	t.Run("encode", func(t *testing.T) {
-		encodeSuccess(t, true, []Value{})
-		encodeSuccess(t, false, []Value{})
-		encodeSuccess(t, Ptr(true), []Value{})
-		encodeSuccess(t, Ptr(false), []Value{})
-	})
-
-	t.Run("decode", func(t *testing.T) {
-
-	})
 
 	success[bool, bool](t, false, false)
 	success[bool, bool](t, true, true)
