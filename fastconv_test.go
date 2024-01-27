@@ -33,7 +33,7 @@ func encodeSuccess(t *testing.T, v any, p *Buffer) {
 	l := GetBuffer()
 	err := Encode(l, v)
 	assert.Nil(t, err)
-	assert.Equal(t, l.buf, p.buf)
+	assert.True(t, EqualBuffer(l, p))
 }
 
 func encodeFail(t *testing.T, v any, err error) {
@@ -214,7 +214,7 @@ func Test_encodeValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			l := &Buffer{}
+			l := GetBuffer()
 			if err := Encode(l, tt.args.value); err != nil {
 				t.Error(err)
 				return
