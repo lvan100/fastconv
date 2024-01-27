@@ -371,11 +371,11 @@ func decodeBoolsToArray(d *decodeState, p *Value, v reflect.Value) {
 	}
 }
 
-func decodeBoolsToNumbers[R Number](s []bool) []R {
-	r := make([]R, len(s), len(s))
-	for i := 0; i < len(s); i++ {
+func decodeBoolsToNumbers[R Number](arr []bool) []R {
+	r := make([]R, len(arr), len(arr))
+	for i := 0; i < len(arr); i++ {
 		var v R
-		if s[i] {
+		if arr[i] {
 			v = 1
 		}
 		r[i] = v
@@ -436,153 +436,200 @@ func decodeBoolsToSlice(d *decodeState, p *Value, v reflect.Value) {
 	}
 }
 
-//// dupNumberSlice n >= len(s)
-//func dupNumberSlice[T, R Number](s []T, n int) []R {
-//	r := make([]R, n, n)
-//	for i := 0; i < len(s); i++ {
-//		r[i] = R(s[i])
-//	}
-//	return r
-//}
-//
-//func decodeNumbers[T Number](k reflect.Kind, s []T, v reflect.Value) {
-//	if v.Kind() == reflect.Interface {
-//		r := dupSlice(s)
-//		v.Set(reflect.ValueOf(r))
-//		return
-//	}
-//	n := checkArrayLength[[]T](len(s), v)
-//	et := v.Type().Elem()
-//	ek := et.Kind()
-//	if k == ek {
-//		r := make([]T, n, n)
-//		copy(r, s)
-//		v.Set(reflect.ValueOf(r))
-//		return
-//	}
-//	switch ek {
-//	case reflect.Bool:
-//		r := make([]bool, n, n)
-//		for i := 0; i < len(s); i++ {
-//			r[i] = s[i] != 0
-//		}
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Int:
-//		r := dupNumberSlice[T, int](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Int8:
-//		r := dupNumberSlice[T, int8](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Int16:
-//		r := dupNumberSlice[T, int16](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Int32:
-//		r := dupNumberSlice[T, int32](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Int64:
-//		r := dupNumberSlice[T, int64](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Uint:
-//		r := dupNumberSlice[T, uint](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Uint8:
-//		r := dupNumberSlice[T, uint8](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Uint16:
-//		r := dupNumberSlice[T, uint16](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Uint32:
-//		r := dupNumberSlice[T, uint32](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Uint64:
-//		r := dupNumberSlice[T, uint64](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Float32:
-//		r := dupNumberSlice[T, float32](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.Float64:
-//		r := dupNumberSlice[T, float64](s, n)
-//		v.Set(reflect.ValueOf(r))
-//	case reflect.String:
-//		r := make([]string, n, n)
-//		switch k {
-//		case reflect.Float32, reflect.Float64:
-//			for i := 0; i < len(s); i++ {
-//				r[i] = strconv.FormatFloat(float64(s[i]), 'f', -1, 64)
-//			}
-//		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-//			for i := 0; i < len(s); i++ {
-//				r[i] = strconv.FormatInt(int64(s[i]), 10)
-//			}
-//		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-//			for i := 0; i < len(s); i++ {
-//				r[i] = strconv.FormatUint(uint64(s[i]), 10)
-//			}
-//		}
-//		v.Set(reflect.ValueOf(r))
-//	default:
-//		panic(&convError{fmt.Errorf("can't convert to type %s", v.Type())})
-//	}
-//}
-
 // decodeInts decodes []int value
 func decodeInts(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Int, p.Ints(), v)
+	decodeNumbers(reflect.Int, p.Ints(), v)
 }
 
 // decodeInt8s decodes []int8 value
 func decodeInt8s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Int8, p.Int8s(), v)
+	decodeNumbers(reflect.Int8, p.Int8s(), v)
 }
 
 // decodeInt16s decodes []int16 value
 func decodeInt16s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Int16, p.Int16s(), v)
+	decodeNumbers(reflect.Int16, p.Int16s(), v)
 }
 
 // decodeInt32s decodes []int32 value
 func decodeInt32s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Int32, p.Int32s(), v)
+	decodeNumbers(reflect.Int32, p.Int32s(), v)
 }
 
 // decodeInt64s decodes []int64 value
 func decodeInt64s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Int64, p.Int64s(), v)
+	decodeNumbers(reflect.Int64, p.Int64s(), v)
 }
 
 // decodeUints decodes []uint value
 func decodeUints(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Uint, p.Uints(), v)
+	decodeNumbers(reflect.Uint, p.Uints(), v)
 }
 
 // decodeUint8s decodes []uint8 value
 func decodeUint8s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Uint8, p.Uint8s(), v)
+	decodeNumbers(reflect.Uint8, p.Uint8s(), v)
 }
 
 // decodeUint16s decodes []uint16 value
 func decodeUint16s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Uint16, p.Uint16s(), v)
+	decodeNumbers(reflect.Uint16, p.Uint16s(), v)
 }
 
 // decodeUint32s decodes []uint32 value
 func decodeUint32s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Uint32, p.Uint32s(), v)
+	decodeNumbers(reflect.Uint32, p.Uint32s(), v)
 }
 
 // decodeUint64s decodes []uint64 value
 func decodeUint64s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Uint64, p.Uint64s(), v)
+	decodeNumbers(reflect.Uint64, p.Uint64s(), v)
 }
 
 // decodeFloat32s decodes []float32 value
 func decodeFloat32s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Float32, p.Float32s(), v)
+	decodeNumbers(reflect.Float32, p.Float32s(), v)
 }
 
 // decodeFloat64s decodes []float64 value
 func decodeFloat64s(d *decodeState, p *Value, v reflect.Value) {
-	//decodeNumbers(reflect.Float64, p.Float64s(), v)
+	decodeNumbers(reflect.Float64, p.Float64s(), v)
+}
+
+func decodeNumbers[T Number](k reflect.Kind, arr []T, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface:
+		r := dupSlice(arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Array:
+		if len(arr) > v.Len() {
+			panic(&convError{fmt.Errorf("array %s overflow", v.Type())})
+		}
+		decodeNumbersToArray(k, arr, v)
+	case reflect.Slice:
+		decodeNumbersToSlice(k, arr, v)
+	default:
+		panic(&convError{fmt.Errorf("can't convert %T to %s", arr, v.Type())})
+	}
+}
+
+func decodeNumbersToArray[T Number](k reflect.Kind, arr []T, v reflect.Value) {
+	switch v.Type().Elem().Kind() {
+	case reflect.Bool:
+		for i := 0; i < len(arr); i++ {
+			x := arr[i] != 0
+			v.Index(i).SetBool(x)
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		for i := 0; i < len(arr); i++ {
+			x := int64(arr[i])
+			v.Index(i).SetInt(x)
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		for i := 0; i < len(arr); i++ {
+			x := uint64(arr[i])
+			v.Index(i).SetUint(x)
+		}
+	case reflect.Float32, reflect.Float64:
+		for i := 0; i < len(arr); i++ {
+			x := float64(arr[i])
+			v.Index(i).SetFloat(x)
+		}
+	case reflect.String:
+		switch k {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			for i := 0; i < len(arr); i++ {
+				x := strconv.FormatInt(int64(arr[i]), 10)
+				v.Index(i).SetString(x)
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			for i := 0; i < len(arr); i++ {
+				x := strconv.FormatUint(uint64(arr[i]), 10)
+				v.Index(i).SetString(x)
+			}
+		case reflect.Float32, reflect.Float64:
+			for i := 0; i < len(arr); i++ {
+				x := strconv.FormatFloat(float64(arr[i]), 'f', -1, 64)
+				v.Index(i).SetString(x)
+			}
+		}
+	default:
+		panic(&convError{fmt.Errorf("can't convert %T to %s", arr, v.Type())})
+	}
+}
+
+func dupNumberSlice[T, R Number](arr []T) []R {
+	r := make([]R, len(arr), len(arr))
+	for i := 0; i < len(arr); i++ {
+		r[i] = R(arr[i])
+	}
+	return r
+}
+
+func decodeNumbersToSlice[T Number](k reflect.Kind, arr []T, v reflect.Value) {
+	switch v.Type().Elem().Kind() {
+	case reflect.Bool:
+		r := make([]bool, len(arr), len(arr))
+		for i := 0; i < len(arr); i++ {
+			r[i] = arr[i] != 0
+		}
+		v.Set(reflect.ValueOf(r))
+	case reflect.Int:
+		r := dupNumberSlice[T, int](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Int8:
+		r := dupNumberSlice[T, int8](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Int16:
+		r := dupNumberSlice[T, int16](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Int32:
+		r := dupNumberSlice[T, int32](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Int64:
+		r := dupNumberSlice[T, int64](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Uint:
+		r := dupNumberSlice[T, uint](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Uint8:
+		r := dupNumberSlice[T, uint8](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Uint16:
+		r := dupNumberSlice[T, uint16](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Uint32:
+		r := dupNumberSlice[T, uint32](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Uint64:
+		r := dupNumberSlice[T, uint64](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Float32:
+		r := dupNumberSlice[T, float32](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.Float64:
+		r := dupNumberSlice[T, float64](arr)
+		v.Set(reflect.ValueOf(r))
+	case reflect.String:
+		r := make([]string, len(arr), len(arr))
+		switch k {
+		case reflect.Float32, reflect.Float64:
+			for i := 0; i < len(arr); i++ {
+				r[i] = strconv.FormatFloat(float64(arr[i]), 'f', -1, 64)
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			for i := 0; i < len(arr); i++ {
+				r[i] = strconv.FormatInt(int64(arr[i]), 10)
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			for i := 0; i < len(arr); i++ {
+				r[i] = strconv.FormatUint(uint64(arr[i]), 10)
+			}
+		}
+		v.Set(reflect.ValueOf(r))
+	default:
+		panic(&convError{fmt.Errorf("can't convert %T to %s", arr, v.Type())})
+	}
 }
 
 // decodeStrings decodes []string value
@@ -647,11 +694,10 @@ func decodeStringsToArray(d *decodeState, p *Value, v reflect.Value) {
 	}
 }
 
-// decodeStringsToInts n >= len(s)
-func decodeStringsToInts[R Number](s []string) []R {
-	r := make([]R, len(s), len(s))
-	for i := 0; i < len(s); i++ {
-		v, err := strconv.ParseInt(s[i], 10, 64)
+func decodeStringsToInts[R Number](arr []string) []R {
+	r := make([]R, len(arr), len(arr))
+	for i := 0; i < len(arr); i++ {
+		v, err := strconv.ParseInt(arr[i], 10, 64)
 		if err != nil {
 			panic(&convError{err})
 		}
@@ -661,10 +707,10 @@ func decodeStringsToInts[R Number](s []string) []R {
 }
 
 // decodeStringsToUints n >= len(s)
-func decodeStringsToUints[R Number](s []string) []R {
-	r := make([]R, len(s), len(s))
-	for i := 0; i < len(s); i++ {
-		v, err := strconv.ParseUint(s[i], 10, 64)
+func decodeStringsToUints[R Number](arr []string) []R {
+	r := make([]R, len(arr), len(arr))
+	for i := 0; i < len(arr); i++ {
+		v, err := strconv.ParseUint(arr[i], 10, 64)
 		if err != nil {
 			panic(&convError{err})
 		}
@@ -673,11 +719,10 @@ func decodeStringsToUints[R Number](s []string) []R {
 	return r
 }
 
-// decodeStringsToFloats n >= len(s)
-func decodeStringsToFloats[R Number](s []string) []R {
-	r := make([]R, len(s), len(s))
-	for i := 0; i < len(s); i++ {
-		v, err := strconv.ParseFloat(s[i], 64)
+func decodeStringsToFloats[R Number](arr []string) []R {
+	r := make([]R, len(arr), len(arr))
+	for i := 0; i < len(arr); i++ {
+		v, err := strconv.ParseFloat(arr[i], 64)
 		if err != nil {
 			panic(&convError{err})
 		}
