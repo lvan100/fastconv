@@ -43,17 +43,10 @@ func encodeFail(t *testing.T, v any, err error) {
 	assert.Equal(t, ret, err)
 }
 
-func fail[T, R any](t *testing.T, v T, err error) {
+func decodeSuccess[R any](t *testing.T, l *Buffer, expect R) {
 	t.Helper()
 	var r R
-	ret := Convert(v, &r)
-	assert.Equal(t, ret, err)
-}
-
-func success[T, R any](t *testing.T, v T, expect R) {
-	t.Helper()
-	var r R
-	err := Convert(v, &r)
+	err := Decode(l, &r)
 	assert.Nil(t, err)
 	rv := reflect.ValueOf(r)
 	switch rv.Kind() {
@@ -62,6 +55,13 @@ func success[T, R any](t *testing.T, v T, expect R) {
 	default:
 		assert.Same(t, r, expect)
 	}
+}
+
+func decodeFail[R any](t *testing.T, l *Buffer, err error) {
+	t.Helper()
+	var r R
+	ret := Decode(l, &r)
+	assert.Equal(t, ret, err)
 }
 
 func Test_encodeValue(t *testing.T) {
