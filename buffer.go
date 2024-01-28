@@ -531,7 +531,7 @@ func GetBuffer() *Buffer {
 		return e
 	}
 	return &Buffer{
-		buf: make([]Value, 0, 512),
+		buf: make([]Value, 0, 256),
 	}
 }
 

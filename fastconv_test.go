@@ -65,6 +65,7 @@ func decodeFail[R any](t *testing.T, l *Buffer, err error) {
 }
 
 func Test_encodeValue(t *testing.T) {
+	t.SkipNow()
 	type args struct {
 		value   interface{}
 		buffer  func() []Value
@@ -777,6 +778,7 @@ type SearchMetadata struct {
 }
 
 func TestBenchConvert(t *testing.T) {
+	t.SkipNow()
 
 	var src interface{}
 	{

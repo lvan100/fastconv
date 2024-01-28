@@ -127,6 +127,7 @@ func TestDecode_Strings(t *testing.T) {
 
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []bool{false, true})
 	decodeFail[[]bool](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseBool", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]bool](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseBool", Num: "x0", Err: strconv.ErrSyntax})
 
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []int{0, 1})
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []int8{0, 1})
@@ -139,6 +140,11 @@ func TestDecode_Strings(t *testing.T) {
 	decodeFail[[]int16](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
 	decodeFail[[]int32](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
 	decodeFail[[]int64](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]int](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]int8](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]int16](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]int32](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]int64](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseInt", Num: "x0", Err: strconv.ErrSyntax})
 
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []uint{0, 1})
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []uint8{0, 1})
@@ -151,12 +157,19 @@ func TestDecode_Strings(t *testing.T) {
 	decodeFail[[]uint16](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
 	decodeFail[[]uint32](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
 	decodeFail[[]uint64](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]uint](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]uint8](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]uint16](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]uint32](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]uint64](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseUint", Num: "x0", Err: strconv.ErrSyntax})
 
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []float32{0, 1})
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []float64{0, 1})
 
 	decodeFail[[]float32](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseFloat", Num: "x0", Err: strconv.ErrSyntax})
 	decodeFail[[]float64](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseFloat", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]float32](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseFloat", Num: "x0", Err: strconv.ErrSyntax})
+	decodeFail[[1]float64](t, GetBuffer().Strings("", []string{"x0"}), &strconv.NumError{Func: "ParseFloat", Num: "x0", Err: strconv.ErrSyntax})
 
 	decodeSuccess(t, GetBuffer().Strings("", []string{"0", "1"}), []string{"0", "1"})
 

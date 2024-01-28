@@ -330,6 +330,153 @@ func TestEncode_Uints(t *testing.T) {
 	encodeSuccess(t, []uint64{0, 1, 2}, GetBuffer().Uint64s("", []uint64{0, 1, 2}))
 }
 
+func TestDecode_Uints(t *testing.T) {
+
+	decodeSuccess[interface{}](t, GetBuffer().Uints("", []uint{0, 1}), []uint{0, 1})
+	decodeSuccess[interface{}](t, GetBuffer().Uint8s("", []uint8{0, 1}), []uint8{0, 1})
+	decodeSuccess[interface{}](t, GetBuffer().Uint16s("", []uint16{0, 1}), []uint16{0, 1})
+	decodeSuccess[interface{}](t, GetBuffer().Uint32s("", []uint32{0, 1}), []uint32{0, 1})
+	decodeSuccess[interface{}](t, GetBuffer().Uint64s("", []uint64{0, 1}), []uint64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1, 2}), []bool{false, true, true})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1, 2}), []bool{false, true, true})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1, 2}), []bool{false, true, true})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1, 2}), []bool{false, true, true})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1, 2}), []bool{false, true, true})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []int{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []int{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []int{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []int{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []int{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []int8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []int8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []int8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []int8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []int8{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []int16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []int16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []int16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []int16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []int16{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []int32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []int32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []int32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []int32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []int32{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []int64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []int64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []int64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []int64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []int64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []uint{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []uint{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []uint{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []uint{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []uint{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []uint8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []uint8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []uint8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []uint8{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []uint8{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []uint16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []uint16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []uint16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []uint16{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []uint16{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []uint32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []uint32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []uint32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []uint32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []uint32{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []uint64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []uint64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []uint64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []uint64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []uint64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []float32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []float32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []float32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []float32{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []float32{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []float64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []float64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []float64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []float64{0, 1})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []float64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Uints("", []uint{0, 1}), []string{"0", "1"})
+	decodeSuccess(t, GetBuffer().Uint8s("", []uint8{0, 1}), []string{"0", "1"})
+	decodeSuccess(t, GetBuffer().Uint16s("", []uint16{0, 1}), []string{"0", "1"})
+	decodeSuccess(t, GetBuffer().Uint32s("", []uint32{0, 1}), []string{"0", "1"})
+	decodeSuccess(t, GetBuffer().Uint64s("", []uint64{0, 1}), []string{"0", "1"})
+
+	decodeFail[uintptr](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to uintptr"))
+	decodeFail[complex64](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to complex64"))
+	decodeFail[complex128](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to complex128"))
+	decodeFail[func()](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to func()"))
+	decodeFail[chan int](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to chan int"))
+	decodeFail[map[string]bool](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to map[string]bool"))
+	decodeFail[struct{}](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to struct {}"))
+
+	decodeFail[[]uintptr](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []uintptr"))
+	decodeFail[[]complex64](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []complex64"))
+	decodeFail[[]complex128](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []complex128"))
+	decodeFail[[]func()](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []func()"))
+	decodeFail[[]chan int](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []chan int"))
+	decodeFail[[]map[string]bool](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []map[string]bool"))
+	decodeFail[[]struct{}](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to []struct {}"))
+
+	decodeFail[[2]bool](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]bool overflow"))
+	decodeFail[[2]int](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]int overflow"))
+	decodeFail[[2]int8](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]int8 overflow"))
+	decodeFail[[2]int16](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]int16 overflow"))
+	decodeFail[[2]int32](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]int32 overflow"))
+	decodeFail[[2]int64](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]int64 overflow"))
+	decodeFail[[2]uint](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]uint overflow"))
+	decodeFail[[2]uint8](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]uint8 overflow"))
+	decodeFail[[2]uint16](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]uint16 overflow"))
+	decodeFail[[2]uint32](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]uint32 overflow"))
+	decodeFail[[2]uint64](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]uint64 overflow"))
+	decodeFail[[2]float32](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]float32 overflow"))
+	decodeFail[[2]float64](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]float64 overflow"))
+	decodeFail[[2]string](t, GetBuffer().Uints("", []uint{0, 1, 2}), errors.New("array [2]string overflow"))
+
+	decodeSuccess[[3]bool](t, GetBuffer().Uints("", []uint{0, 1, 0}), [3]bool{false, true, false})
+	decodeSuccess[[3]int](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]int{0, 1, 2})
+	decodeSuccess[[3]int8](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]int8{0, 1, 2})
+	decodeSuccess[[3]int16](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]int16{0, 1, 2})
+	decodeSuccess[[3]int32](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]int32{0, 1, 2})
+	decodeSuccess[[3]int64](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]int64{0, 1, 2})
+	decodeSuccess[[3]uint](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]uint{0, 1, 2})
+	decodeSuccess[[3]uint8](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]uint8{0, 1, 2})
+	decodeSuccess[[3]uint16](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]uint16{0, 1, 2})
+	decodeSuccess[[3]uint32](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]uint32{0, 1, 2})
+	decodeSuccess[[3]uint64](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]uint64{0, 1, 2})
+	decodeSuccess[[3]float32](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]float32{0, 1, 2})
+	decodeSuccess[[3]float64](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]float64{0, 1, 2})
+	decodeSuccess[[3]string](t, GetBuffer().Uints("", []uint{0, 1, 2}), [3]string{"0", "1", "2"})
+
+	decodeFail[[3]uintptr](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]uintptr"))
+	decodeFail[[3]complex64](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]complex64"))
+	decodeFail[[3]complex128](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]complex128"))
+	decodeFail[[3]func()](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]func()"))
+	decodeFail[[3]chan int](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]chan int"))
+	decodeFail[[3]map[string]bool](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]map[string]bool"))
+	decodeFail[[3]struct{}](t, GetBuffer().Uints("", []uint{0, 1}), errors.New("can't convert []uint to [3]struct {}"))
+}
+
 func TestEncode_Float(t *testing.T) {
 	encodeSuccess(t, float32(3), GetBuffer().Float("", 3))
 	encodeSuccess(t, Ptr(float64(3)), GetBuffer().Float("", 3))
@@ -396,4 +543,106 @@ func TestDecode_Float(t *testing.T) {
 func TestEncode_Floats(t *testing.T) {
 	encodeSuccess(t, []float32{0, 1, 2}, GetBuffer().Float32s("", []float32{0, 1, 2}))
 	encodeSuccess(t, []float64{0, 1, 2}, GetBuffer().Float64s("", []float64{0, 1, 2}))
+}
+
+func TestDecode_Floats(t *testing.T) {
+
+	decodeSuccess[interface{}](t, GetBuffer().Float32s("", []float32{0, 1}), []float32{0, 1})
+	decodeSuccess[interface{}](t, GetBuffer().Float64s("", []float64{0, 1}), []float64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1, 2}), []bool{false, true, true})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1, 2}), []bool{false, true, true})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []int{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []int{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []int8{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []int8{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []int16{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []int16{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []int32{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []int32{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []int64{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []int64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []uint{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []uint{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []uint8{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []uint8{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []uint16{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []uint16{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []uint32{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []uint32{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []uint64{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []uint64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []float32{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []float32{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []float64{0, 1})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []float64{0, 1})
+
+	decodeSuccess(t, GetBuffer().Float32s("", []float32{0, 1}), []string{"0", "1"})
+	decodeSuccess(t, GetBuffer().Float64s("", []float64{0, 1}), []string{"0", "1"})
+
+	decodeFail[uintptr](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to uintptr"))
+	decodeFail[complex64](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to complex64"))
+	decodeFail[complex128](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to complex128"))
+	decodeFail[func()](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to func()"))
+	decodeFail[chan int](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to chan int"))
+	decodeFail[map[string]bool](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to map[string]bool"))
+	decodeFail[struct{}](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to struct {}"))
+
+	decodeFail[[]uintptr](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []uintptr"))
+	decodeFail[[]complex64](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []complex64"))
+	decodeFail[[]complex128](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []complex128"))
+	decodeFail[[]func()](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []func()"))
+	decodeFail[[]chan int](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []chan int"))
+	decodeFail[[]map[string]bool](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []map[string]bool"))
+	decodeFail[[]struct{}](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to []struct {}"))
+
+	decodeFail[[2]bool](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]bool overflow"))
+	decodeFail[[2]int](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]int overflow"))
+	decodeFail[[2]int8](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]int8 overflow"))
+	decodeFail[[2]int16](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]int16 overflow"))
+	decodeFail[[2]int32](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]int32 overflow"))
+	decodeFail[[2]int64](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]int64 overflow"))
+	decodeFail[[2]uint](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]uint overflow"))
+	decodeFail[[2]uint8](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]uint8 overflow"))
+	decodeFail[[2]uint16](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]uint16 overflow"))
+	decodeFail[[2]uint32](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]uint32 overflow"))
+	decodeFail[[2]uint64](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]uint64 overflow"))
+	decodeFail[[2]float32](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]float32 overflow"))
+	decodeFail[[2]float64](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]float64 overflow"))
+	decodeFail[[2]string](t, GetBuffer().Float32s("", []float32{0, 1, 2}), errors.New("array [2]string overflow"))
+
+	decodeSuccess[[3]bool](t, GetBuffer().Float32s("", []float32{0, 1, 0}), [3]bool{false, true, false})
+	decodeSuccess[[3]int](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]int{0, 1, 2})
+	decodeSuccess[[3]int8](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]int8{0, 1, 2})
+	decodeSuccess[[3]int16](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]int16{0, 1, 2})
+	decodeSuccess[[3]int32](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]int32{0, 1, 2})
+	decodeSuccess[[3]int64](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]int64{0, 1, 2})
+	decodeSuccess[[3]uint](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]uint{0, 1, 2})
+	decodeSuccess[[3]uint8](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]uint8{0, 1, 2})
+	decodeSuccess[[3]uint16](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]uint16{0, 1, 2})
+	decodeSuccess[[3]uint32](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]uint32{0, 1, 2})
+	decodeSuccess[[3]uint64](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]uint64{0, 1, 2})
+	decodeSuccess[[3]float32](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]float32{0, 1, 2})
+	decodeSuccess[[3]float64](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]float64{0, 1, 2})
+	decodeSuccess[[3]string](t, GetBuffer().Float32s("", []float32{0, 1, 2}), [3]string{"0", "1", "2"})
+
+	decodeFail[[3]uintptr](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]uintptr"))
+	decodeFail[[3]complex64](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]complex64"))
+	decodeFail[[3]complex128](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]complex128"))
+	decodeFail[[3]func()](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]func()"))
+	decodeFail[[3]chan int](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]chan int"))
+	decodeFail[[3]map[string]bool](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]map[string]bool"))
+	decodeFail[[3]struct{}](t, GetBuffer().Float32s("", []float32{0, 1}), errors.New("can't convert []float32 to [3]struct {}"))
 }
